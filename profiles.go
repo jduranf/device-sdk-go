@@ -360,7 +360,7 @@ func (p *profileCache) addDevice(d *models.Device) error {
 				setOp := []models.ResourceOperation{*res}
 				key := strings.ToLower(res.Operation)
 
-				svc.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
+				svc.lc.Debug(fmt.Sprintf("profiles: created new set operation %s: %v\n", key, setOp))
 
 				resOps[key] = setOp
 				ops = append(ops, *res)
