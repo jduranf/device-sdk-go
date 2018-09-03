@@ -143,12 +143,14 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 
 	if len(configDir) == 0 {
 		configDir = "./res/"
+		//configDir = "/etc/edgex/"
 	}
 
 	if len(profile) > 0 {
 		name = "configuration-" + profile + ".toml"
 	} else {
 		name = "configuration.toml"
+		//name = "configuration-gxds.toml"
 	}
 
 	path := configDir + name

@@ -151,6 +151,7 @@ func (p *profileCache) getDeviceObjects(devName string) map[string]models.Device
 	return devObjs
 }
 
+/*
 // getDeviceObject...
 func (p *profileCache) getDeviceObjectByName(devName string, op *models.ResourceOperation) *models.DeviceObject {
 	var devObj models.DeviceObject
@@ -169,6 +170,32 @@ func (p *profileCache) getDeviceObjectByName(devName string, op *models.Resource
 	}
 
 	return &devObj
+}
+*/
+
+// GetDeviceObject...
+func (p *profileCache) getDeviceObjectByName(name string, op *models.ResourceOperation) *models.DeviceObject {
+	//var devObj models.DeviceObject
+	var devObj2 models.DeviceObject
+	devObjs := p.getDeviceObjects(name)
+
+	if op != nil && devObjs != nil {
+		devObj, ok := devObjs[op.Object]
+		devObj2 = devObj
+		if !ok {
+			devObj, ok := devObjs[op.Resource]
+			devObj2 = devObj
+			if !ok {
+				return nil
+			}
+		}
+
+		if p.descriptorExists(op.Parameter) {
+			devObj2.Name = op.Parameter
+		}
+	}
+
+	return &devObj2
 }
 
 // getDeviceObject...
@@ -469,6 +496,7 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 		return nil
 	} else {
 		desc.Id = bson.ObjectIdHex(id)
+		//desc.Id = "" //bson.ObjectIdHex(id)
 		svc.lc.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
 	}
 

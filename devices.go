@@ -248,8 +248,8 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 		return err
 	}
 
-	d.devices[dev.Name] = dev
 	d.names[dev.Id.Hex()] = dev.Name
+	d.devices[dev.Name] = dev
 
 	return nil
 }

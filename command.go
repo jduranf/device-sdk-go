@@ -143,8 +143,15 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		return
 	}
 
+	var transformsOK bool = true
 	for _, op := range ops {
-		objName := op.Object
+		var objName string
+
+		if op.Object == "" && op.Resource != "" {
+			objName = op.Resource
+		} else {
+			objName = op.Object
+		}
 		svc.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
@@ -163,20 +170,20 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		// TODO: lookup valuedescriptor & pass to HandleOperation
 
 		go s.proto.HandleOperation(&op, d, &devObj, nil, value, rChan)
-		count++
-	}
+		//	count++
+		//}
 
-	var transformsOK bool = true
+		//var transformsOK bool = true
 
-	// wait for fixed number of results
-	for count != 0 {
+		// wait for fixed number of results
+		//for count != 0 {
 		svc.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
 		cr := <-rChan
 
 		// get the device resource associated with the rsp.RO
 		do := pc.getDeviceObject(d, cr.RO)
 
-		ok := cr.TransformResult(do.Properties.Value)
+		ok = cr.TransformResult(do.Properties.Value)
 		if !ok {
 			transformsOK = false
 		}
@@ -195,7 +202,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		svc.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
 
-		count--
+		//	count--
 	}
 
 	close(rChan)
