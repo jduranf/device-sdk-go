@@ -1,10 +1,10 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 Circutor S.A.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// This package provides a simple example of a device service.
+// This package provides a Modbus device service.
 //
 package main
 
@@ -33,6 +33,7 @@ func main() {
 	var profile string
 	var confDir string
 
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
 	flag.BoolVar(&useRegistry, "r", false, "Indicates the service should use registry.")
 	flag.StringVar(&profile, "profile", "", "Specify a profile other than default.")
@@ -48,9 +49,9 @@ func main() {
 }
 
 func startService(useRegistry bool, profile string, confDir string) error {
-	sd := modbus.ModbusDriver{}
+	md := modbus.ModbusDriver{}
 
-	s, err := device.NewService(serviceName, serviceVersion, &sd)
+	s, err := device.NewService(serviceName, serviceVersion, &md)
 	if err != nil {
 		return err
 	}

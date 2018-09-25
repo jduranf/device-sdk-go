@@ -1,16 +1,14 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
 package device
 
 import (
-	"fmt"
-	"io/ioutil"
-
-	"github.com/BurntSushi/toml"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 const (
@@ -47,10 +45,23 @@ type ServiceInfo struct {
 }
 
 type service struct {
+	// Name is service's register name
+	Name string
 	// Host is the hostname or IP address of a service.
 	Host string
 	// Port is the HTTP port of a service.
 	Port int
+	// Timeout specifies a timeout (in milliseconds) for
+	// processing REST calls from other services.
+	Timeout int
+	// Health check url
+	CheckPath string
+	// Health check interval
+	CheckInterval string
+	// Maximum number of retries
+	FailLimit int
+	// Time to wait until next retry
+	FailWaitTime int64
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.
@@ -124,61 +135,10 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Schedules is a map schedules to be created on startup.
-	Schedules map[string]string
-	// SchedulesEvents is a map scheduleevents to be created on startup.
-	ScheduleEvents map[string]ScheduleEventInfo
+	// Schedules is created on startup.
+	Schedules []models.Schedule
+	// SchedulesEvents is created on startup.
+	ScheduleEvents []models.ScheduleEvent
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
-}
-
-// LoadConfig loads the local configuration file based upon the
-// specified parameters and returns a pointer to the global Config
-// struct which holds all of the local configuration settings for
-// the DS.
-//
-// TODO: this should move to /service and be a non-public func.
-func LoadConfig(profile string, configDir string) (config *Config, err error) {
-	var name string
-
-	if len(configDir) == 0 {
-		configDir = "./res/"
-		//configDir = "/etc/edgex/"
-	}
-
-	if len(profile) > 0 {
-		name = "configuration-" + profile + ".toml"
-	} else {
-		name = "configuration.toml"
-		//name = "configuration-gxds.toml"
-	}
-
-	path := configDir + name
-
-	// As the toml package can panic if TOML is invalid,
-	// or elements are found that don't match members of
-	// the given struct, use a defered func to recover
-	// from the panic and output a useful error.
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("could not load configuration file; invalid TOML (%s)", path)
-		}
-	}()
-
-	config = &Config{}
-	contents, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("could not load configuration file (%s): %v", path, err.Error())
-	}
-
-	// Decode the configuration from TOML
-	//
-	// TODO: invalid input can cause a SIGSEGV fatal error (INVESTIGATE)!!!
-	//       - test missing keys, keys with wrong type, ...
-	err = toml.Unmarshal(contents, config)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
-	}
-
-	return config, nil
 }

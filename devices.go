@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -11,6 +12,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -18,6 +20,22 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 )
+
+// Inteface for device
+type deviceCacheInterface interface {
+	InitDeviceCache()
+	Device(name string) *models.Device
+	Devices() map[string]*models.Device
+	Add(dev *models.Device) error
+	AddById(id string) error
+	Update(dev *models.Device) error
+	UpdateAdminState(id string) error
+	DeviceById(id string) *models.Device
+	Remove(dev *models.Device) error
+	IsDeviceLocked(id string) (exists, locked bool)
+	SetDeviceOpState(name string, os models.OperatingState) error
+	SetDeviceByIdOpState(id string, os models.OperatingState) error
+}
 
 // deviceCache is a local cache of devices seeded from Core Metadata.
 type deviceCache struct {
@@ -27,7 +45,7 @@ type deviceCache struct {
 
 var (
 	dcOnce sync.Once
-	dc     *deviceCache
+	dc     deviceCacheInterface
 )
 
 // Creates a singleton deviceCache instance.
@@ -45,17 +63,10 @@ func newDeviceCache(serviceId string) error {
 
 		svc.lc.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
 
-		dc.devices = make(map[string]*models.Device)
-		dc.names = make(map[string]string)
+		dc.InitDeviceCache()
 
-		for _, md := range mDevs {
-			err = svc.dc.UpdateOpState(md.Id.Hex(), "DISABLED")
-			if err != nil {
-				svc.lc.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", md.Name, err))
-			}
-
-			md.OperatingState = models.OperatingState("DISABLED")
-			dc.add(&md)
+		for index, _ := range mDevs {
+			dc.Add(&mDevs[index])
 		}
 
 		// TODO: call Protocol.initialize
@@ -65,15 +76,16 @@ func newDeviceCache(serviceId string) error {
 	return retval
 }
 
-// AddDevice adds a new device to the device service.
-func (s *Service) AddDevice(dev models.Device) error {
-	return dc.add(&dev)
+// Init basic state for deviceCache
+func (d *deviceCache) InitDeviceCache() {
+	d.devices = make(map[string]*models.Device)
+	d.names = make(map[string]string)
 }
 
 // Adds a new device to the cache. This method is used to populate the
 // devices cache with pre-existing devices from Core Metadata, as well
 // as create new devices returned in a ScanList during discovery.
-func (d *deviceCache) add(dev *models.Device) error {
+func (d *deviceCache) Add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[dev.Name]; ok {
@@ -138,8 +150,16 @@ func (d *deviceCache) IsDeviceLocked(id string) (exists, locked bool) {
 	return false, false
 }
 
-// RemoveById removes the specified (by id) device from the cache.
-func (d *deviceCache) RemoveById(id string) error {
+// Remove removes the specified device from the cache.
+func (d *deviceCache) Remove(dev *models.Device) error {
+	err := svc.dc.Delete(dev.Id.Hex())
+	if err != nil {
+		return err
+	}
+
+	delete(d.devices, dev.Name)
+	delete(d.devices, dev.Id.Hex())
+
 	return nil
 }
 
@@ -155,11 +175,40 @@ func (d *deviceCache) SetDeviceByIdOpState(id string, os models.OperatingState) 
 
 // Update updates the device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (d *deviceCache) Update(id string) error {
+func (d *deviceCache) Update(dev *models.Device) error {
+	err := svc.dc.Update(*dev)
+	if err != nil {
+		return err
+	}
+
+	// consider device name can be modified, so remove the old one and put new one
+	if _, ok := d.names[dev.Id.Hex()]; ok {
+		delete(d.devices, d.names[dev.Id.Hex()])
+	}
+	d.devices[dev.Name] = dev
+	d.names[dev.Id.Hex()] = dev.Name
+
 	return nil
 }
 
-// TODO: this should method should  be broken into two separate
+// UpdateAdminState updates the device admin state in cache by id. This method
+// is used by the UpdateHandler to trigger update device admin state that's been
+// updated directly to Core Metadata.
+func (d *deviceCache) UpdateAdminState(id string) error {
+	name, ok := d.names[id]
+	if !ok {
+		return errors.New("Device not found")
+	}
+	dev, err := svc.dc.Device(id)
+	if err != nil {
+		return err
+	}
+
+	d.devices[name].AdminState = dev.AdminState
+	return nil
+}
+
+// TODO: this should method should be broken into two separate
 // functions, one which validates an existing device and adds
 // it to the local cache, and one that adds a brand new device.
 // The current method is an almost direct translation of the Java
@@ -248,8 +297,8 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 		return err
 	}
 
-	d.names[dev.Id.Hex()] = dev.Name
 	d.devices[dev.Name] = dev
+	d.names[dev.Id.Hex()] = dev.Name
 
 	return nil
 }

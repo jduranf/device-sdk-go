@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -13,20 +14,18 @@
 package device
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
-
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -36,9 +35,6 @@ const (
 	httpScheme = "http://"
 	httpProto  = "HTTP"
 
-	coreDataServiceKey     = "edgex-core-data"
-	coreMetadataServiceKey = "edgex-core-metadata"
-
 	v1Addressable = "/api/v1/addressable"
 	v1Callback    = "/api/v1/callback"
 	v1Device      = "/api/v1/device"
@@ -47,7 +43,8 @@ const (
 )
 
 var (
-	svc *Service
+	svc            *Service
+	registryClient registry.Client
 )
 
 // A Service listens for requests and routes them to the right command
@@ -69,9 +66,11 @@ type Service struct {
 	dpc           metadata.DeviceProfileClient
 	lc            logger.LoggingClient
 	vdc           coredata.ValueDescriptorClient
+	scc           metadata.ScheduleClient
+	scec          metadata.ScheduleEventClient
 	ds            models.DeviceService
 	r             *mux.Router
-	cs            *Schedules
+	scca          ScheduleCacheInterface
 	cw            *Watchers
 	proto         ProtocolDriver
 	asyncCh       <-chan *CommandResult
@@ -201,17 +200,6 @@ func validateClientConfig() error {
 	return nil
 }
 
-func buildAddr(host string, port string) string {
-	var buffer bytes.Buffer
-
-	buffer.WriteString(httpScheme)
-	buffer.WriteString(host)
-	buffer.WriteString(colon)
-	buffer.WriteString(port)
-
-	return buffer.String()
-}
-
 // Start the device service. The bool useRegisty indicates whether the registry
 // should be used to read initial configuration settings. This also controls
 // whether the service registers itself the registry. The profile and confDir
@@ -219,14 +207,24 @@ func buildAddr(host string, port string) string {
 func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
-
+	s.useRegistry = useRegistry
 	s.c, err = LoadConfig(profile, confDir)
 	if err != nil {
-		s.lc.Error(fmt.Sprintf("error loading config file: %v\n", err))
+		fmt.Printf("error loading config file: %v \n", err)
 		return err
 	}
 
-	// TODO: add useRegistry logic
+	var consulMsg string
+	if useRegistry {
+		consulMsg = "Register in consul..."
+		registryClient, err = GetConsulClient(s.Name, s.c)
+		if err != nil {
+			return err
+		}
+	} else {
+		consulMsg = "Bypassing registration in consul..."
+	}
+	fmt.Println(consulMsg)
 
 	// TODO: validate that metadata and core config settings are set
 	err = validateClientConfig()
@@ -234,69 +232,12 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		return err
 	}
 
-	var remoteLog bool = false
-	var logTarget string
-
-	if s.c.Logging.RemoteURL == "" {
-		logTarget = s.c.Logging.File
-	} else {
-		remoteLog = true
-		logTarget = s.c.Logging.RemoteURL
-	}
-
-	s.lc = logger.NewClient(s.Name, remoteLog, logTarget)
+	initDependencyClients()
 
 	done := make(chan struct{})
 
 	s.cw = newWatchers()
-	s.cs = newSchedules(s.c)
-
-	// initialize Core Metadata clients
-	metaPort := strconv.Itoa(s.c.Clients[ClientMetadata].Port)
-	metaHost := s.c.Clients[ClientMetadata].Host
-	metaAddr := buildAddr(metaHost, metaPort)
-	metaPath := v1Addressable
-	metaURL := metaAddr + metaPath
-
-	params := types.EndpointParams{
-		// TODO: Can't use edgex-go internal constants!
-		//ServiceKey:internal.CoreMetaDataServiceKey,
-		ServiceKey:  coreMetadataServiceKey,
-		Path:        metaPath,
-		UseRegistry: s.useRegistry,
-		Url:         metaURL}
-
-	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
-
-	params.Path = v1Device
-	params.Url = metaAddr + params.Path
-	s.dc = metadata.NewDeviceClient(params, types.Endpoint{})
-
-	params.Path = v1DevService
-	params.Url = metaAddr + params.Path
-	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
-
-	params.Path = v1Deviceprofile
-	params.Url = metaAddr + params.Path
-	s.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
-
-	// initialize Core Data clients
-	dataPort := strconv.Itoa(s.c.Clients[ClientData].Port)
-	dataHost := s.c.Clients[ClientData].Host
-	dataAddr := buildAddr(dataHost, dataPort)
-	dataPath := v1Event
-	dataURL := dataAddr + dataPath
-
-	params.ServiceKey = coreDataServiceKey
-	params.Path = dataPath
-	params.UseRegistry = s.useRegistry
-	params.Url = dataURL
-
-	s.ec = coredata.NewEventClient(params, types.Endpoint{})
-
-	params.Path = v1Valuedescriptor
-	params.Url = dataAddr + params.Path
-	s.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
+	s.scca = getScheduleCache(s.c)
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
@@ -328,7 +269,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		go processAsyncResults()
 	}
 
-	err = s.proto.Initialize(s.lc, s.asyncCh)
+	err = s.proto.Initialize(s, s.lc, s.asyncCh)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
 		return err
@@ -358,6 +299,11 @@ func (s *Service) Stop(force bool) error {
 	s.stopped = true
 	s.proto.Stop(force)
 	return nil
+}
+
+// AddDevice adds a new device to the device service.
+func (s *Service) AddDevice(dev models.Device) error {
+	return dc.Add(&dev)
 }
 
 // NewService create a new device service instance with the given

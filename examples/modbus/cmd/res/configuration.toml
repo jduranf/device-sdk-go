@@ -2,7 +2,7 @@
 Host = "localhost"
 Port = 49990
 ConnectRetries = 3
-HealthCheck = ""
+HealthCheck = "/api/v1/ping"
 Labels = []
 OpenMsg = "device Modbus started"
 ReadMaxLimit = 256
@@ -11,15 +11,22 @@ Timeout = 5000
 [Registry]
 Host = "localhost"
 Port = 8500
+CheckInterval = "10s"
+FailLimit = 3
+FailWaitTime = 10
 
 [Clients]
   [Clients.Data]
+  name = "edgex-core-data"
   Host = "localhost"
   Port = 48080
+  Timeout = 50000
 
   [Clients.Metadata]
+  name = "edgex-core-metadata"
   Host = "localhost"
   Port = 48081
+  Timeout = 50000
 
 [Device]
   DataTransform = true
