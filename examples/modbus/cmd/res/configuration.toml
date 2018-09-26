@@ -1,6 +1,6 @@
 [Service]
 Host = "localhost"
-Port = 49990
+Port = 49991
 ConnectRetries = 3
 HealthCheck = "/api/v1/ping"
 Labels = []
