@@ -29,9 +29,12 @@ type deviceCacheInterface interface {
 	Add(dev *models.Device) error
 	AddById(id string) error
 	Update(dev *models.Device) error
+	UpdateById(id string) error
 	UpdateAdminState(id string) error
+	UpdateAddressableById(id string) error
 	DeviceById(id string) *models.Device
 	Remove(dev *models.Device) error
+	RemoveById(id string) error
 	IsDeviceLocked(id string) (exists, locked bool)
 	SetDeviceOpState(name string, os models.OperatingState) error
 	SetDeviceByIdOpState(id string, os models.OperatingState) error
@@ -89,9 +92,9 @@ func (d *deviceCache) Add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[dev.Name]; ok {
+		pc.removeDevice(dev)
+		delete(d.names, dev.Id.Hex())
 		delete(d.devices, dev.Name)
-
-		// TODO: remove from profiles
 	}
 
 	svc.lc.Debug(fmt.Sprintf("Adding managed device: : %v\n", dev))
@@ -116,7 +119,13 @@ func (d *deviceCache) Add(dev *models.Device) error {
 // method is used by the UpdateHandler to trigger addition of a
 // device that's been added directly to Core Metadata.
 func (d *deviceCache) AddById(id string) error {
-	return nil
+	dev, err := svc.dc.Device(id)
+	if err != nil {
+		svc.lc.Error(fmt.Sprintf("Device error: %v", err))
+		return err
+	}
+
+	return dc.Add(&dev)
 }
 
 // Device returns a device with the given name.
@@ -157,8 +166,23 @@ func (d *deviceCache) Remove(dev *models.Device) error {
 		return err
 	}
 
+	pc.removeDevice(dev)
+	delete(d.names, dev.Id.Hex())
 	delete(d.devices, dev.Name)
-	delete(d.devices, dev.Id.Hex())
+
+	return nil
+}
+
+// RemoveById removes a device with the given device id.
+func (d *deviceCache) RemoveById(id string) error {
+	name, ok := d.names[id]
+	if !ok {
+		return errors.New("Device not found")
+	}
+
+	pc.removeDevice(d.devices[name])
+	delete(d.names, id)
+	delete(d.devices, name)
 
 	return nil
 }
@@ -191,6 +215,16 @@ func (d *deviceCache) Update(dev *models.Device) error {
 	return nil
 }
 
+// UpdateById updates a device with the given device id.
+func (d *deviceCache) UpdateById(id string) error {
+	err := d.RemoveById(id)
+	if err != nil {
+		return err
+	}
+
+	return d.AddById(id)
+}
+
 // UpdateAdminState updates the device admin state in cache by id. This method
 // is used by the UpdateHandler to trigger update device admin state that's been
 // updated directly to Core Metadata.
@@ -205,6 +239,25 @@ func (d *deviceCache) UpdateAdminState(id string) error {
 	}
 
 	d.devices[name].AdminState = dev.AdminState
+	return nil
+}
+
+// UpdateAddressableById updates device addressable with the given device id.
+func (d *deviceCache) UpdateAddressableById(id string) error {
+	// TODO: Addressable by ID isn't implemented!
+	/*
+		add, err := svc.ac.Addressable(id)
+		if err != nil {
+			svc.lc.Error(fmt.Sprintf("Addressable error: %v", err))
+			return err
+		}
+
+		for _, device := range d.devices {
+			if device.Addressable.Id.Hex() == id {
+				device.Addressable = add
+			}
+		}*/
+
 	return nil
 }
 

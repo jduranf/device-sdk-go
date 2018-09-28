@@ -33,16 +33,40 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// It was decided at the last F2F, that the one Core Metadata callback
-	// function to be supported for Dehli is handling changes to a device's
-	// adminState (LOCKED or UNLOCKED).
-	if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPut) {
-		err = dc.UpdateAdminState(cbAlert.Id)
+	if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPost) {
+		err = dc.AddById(cbAlert.Id)
 		if err == nil {
-			svc.lc.Info(fmt.Sprintf("Updated device %s admin state", cbAlert.Id))
+			svc.lc.Info(fmt.Sprintf("Added device %s", cbAlert.Id))
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			svc.lc.Error(fmt.Sprintf("Couldn't update device %s admin state: %v", cbAlert.Id, err.Error()))
+			svc.lc.Error(fmt.Sprintf("Couldn't add device %s: %v", cbAlert.Id, err.Error()))
+			return
+		}
+	} else if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodPut) {
+		err = dc.UpdateById(cbAlert.Id)
+		if err == nil {
+			svc.lc.Info(fmt.Sprintf("Updated device %s", cbAlert.Id))
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			svc.lc.Error(fmt.Sprintf("Couldn't update device %s: %v", cbAlert.Id, err.Error()))
+			return
+		}
+	} else if (cbAlert.ActionType == models.DEVICE) && (req.Method == http.MethodDelete) {
+		err = dc.RemoveById(cbAlert.Id)
+		if err == nil {
+			svc.lc.Info(fmt.Sprintf("Removed device %s", cbAlert.Id))
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			svc.lc.Error(fmt.Sprintf("Couldn't remove device %s: %v", cbAlert.Id, err.Error()))
+			return
+		}
+	} else if (cbAlert.ActionType == models.ADDRESSABLE) && (req.Method == http.MethodPut) {
+		err = dc.UpdateAddressableById(cbAlert.Id)
+		if err == nil {
+			svc.lc.Info(fmt.Sprintf("Updated addressable %s", cbAlert.Id))
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			svc.lc.Error(fmt.Sprintf("Couldn't addressable device %s: %v", cbAlert.Id, err.Error()))
 			return
 		}
 	} else {
