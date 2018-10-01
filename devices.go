@@ -244,19 +244,17 @@ func (d *deviceCache) UpdateAdminState(id string) error {
 
 // UpdateAddressableById updates device addressable with the given device id.
 func (d *deviceCache) UpdateAddressableById(id string) error {
-	// TODO: Addressable by ID isn't implemented!
-	/*
-		add, err := svc.ac.Addressable(id)
-		if err != nil {
-			svc.lc.Error(fmt.Sprintf("Addressable error: %v", err))
-			return err
-		}
+	add, err := svc.ac.Addressable(id)
+	if err != nil {
+		svc.lc.Error(fmt.Sprintf("Addressable error: %v", err))
+		return err
+	}
 
-		for _, device := range d.devices {
-			if device.Addressable.Id.Hex() == id {
-				device.Addressable = add
-			}
-		}*/
+	for _, device := range d.devices {
+		if device.Addressable.Id.Hex() == id {
+			device.Addressable = add
+		}
+	}
 
 	return nil
 }
