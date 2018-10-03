@@ -8,7 +8,7 @@
 // This package provides management of device service related
 // objects that may be distributed across one or more EdgeX
 // core microservices.
-//
+
 package device
 
 import (
@@ -280,7 +280,7 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 	// TODO: this is the best test for not-found for now...
 	if addr.Name != dev.Addressable.Name {
 		addr = dev.Addressable
-		addr.BaseObject.Origin = time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
+		addr.BaseObject.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 		svc.lc.Debug(fmt.Sprintf("Creating new Addressable Object with name: %v", addr))
 
 		id, err := svc.ac.Add(&addr)

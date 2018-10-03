@@ -4,13 +4,10 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
-// Package service(service?) implements the core logic of a device service,
-// which include loading configuration, handling service registration,
-// creation of object caches, REST APIs, and basic service functionality.
-// Clients of this package must provide concrete implementations of the
-// device-specific interfaces (e.g. ProtocolDriver).
-//
+
+// This package provides a basic EdgeX Foundry device service implementation
+// meant to be embedded in an application, similar in approach to the builtin
+// net/http package.
 package device
 
 import (
@@ -108,7 +105,7 @@ func attemptInit(done chan<- struct{}) {
 			// don't quit, but instead try to create addressable & service
 		}
 
-		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
+		millis := time.Now().UnixNano() / int64(time.Millisecond)
 
 		// TODO: same as above
 		if addr.Name != svc.Name {

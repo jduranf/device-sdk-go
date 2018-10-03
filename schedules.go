@@ -4,15 +4,16 @@
 // Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 package device
 
 import (
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
-	"sync"
 )
 
 type ScheduleCacheInterface interface {

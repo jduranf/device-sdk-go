@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 Canonical Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 package device
 
 import (
@@ -13,13 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	// TODO: imports commented out till cache objects become interfaces
-	//	"time"
-
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	//	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	"github.com/gorilla/mux"
-	//	"gopkg.in/mgo.v2/bson"
 )
 
 const (

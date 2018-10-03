@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2018 Canonical Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 package device
 
 import (
@@ -159,7 +159,8 @@ func (p *profileCache) getDeviceObjectByName(devName string, op *models.Resource
 	devObjs := p.getDeviceObjects(devName)
 
 	if op != nil && devObjs != nil {
-		devObj, ok := devObjs[op.Object]
+		var ok bool
+		devObj, ok = devObjs[op.Object]
 
 		if !ok {
 			return nil
