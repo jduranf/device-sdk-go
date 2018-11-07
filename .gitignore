@@ -1,8 +1,7 @@
 *~
 *.log
-examples/simple/cmd/simple-device
+example/cmd/device-simple/device-simple
+example/cmd/device-modbus/device-modbus
 glide.lock
 vendor
 .idea
-
-
