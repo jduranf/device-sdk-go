@@ -28,8 +28,9 @@ const (
 )
 
 const (
-	modbusTCP = "HTTP"
-	modbusRTU = "OTHER"
+	modbusTCP  = "HTTP"
+	modbusRTU  = "OTHER"
+	comTimeout = 2000
 )
 
 type ModbusDevice struct {
@@ -114,6 +115,10 @@ func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err
 		modbusDevice.mutex.Lock()
 
 		// Connect with RTU device
+		modbusDevice.rtuHandler.BaudRate = config.baudRate
+		modbusDevice.rtuHandler.DataBits = config.dataBits
+		modbusDevice.rtuHandler.StopBits = config.stopBits
+		modbusDevice.rtuHandler.Parity = config.parity
 		modbusDevice.rtuHandler.SlaveId = config.slaveID
 		err = connectRTUDevice(modbusDevice)
 		if err != nil {
@@ -215,7 +220,7 @@ func getRTUConfig(addressable *models.Addressable) (config rtuConfig, err error)
 func createTCPDevice(address string) (modbusDevice *ModbusDevice) {
 	modbusDevice = &ModbusDevice{}
 	tcpHandler := modbus.NewTCPClientHandler(address)
-	tcpHandler.Timeout = 2000 * time.Millisecond
+	tcpHandler.Timeout = comTimeout * time.Millisecond
 	modbusDevice.tcpHandler = tcpHandler
 	modbusDevice.client = modbus.NewClient(tcpHandler)
 	return
@@ -224,11 +229,7 @@ func createTCPDevice(address string) (modbusDevice *ModbusDevice) {
 func createRTUDevice(config rtuConfig) (modbusDevice *ModbusDevice) {
 	modbusDevice = &ModbusDevice{}
 	rtuHandler := modbus.NewRTUClientHandler(config.address)
-	rtuHandler.BaudRate = config.baudRate
-	rtuHandler.DataBits = config.dataBits
-	rtuHandler.StopBits = config.stopBits
-	rtuHandler.Parity = config.parity
-	rtuHandler.Timeout = 2000 * time.Millisecond
+	rtuHandler.Timeout = comTimeout * time.Millisecond
 	modbusDevice.rtuHandler = rtuHandler
 	modbusDevice.client = modbus.NewClient(rtuHandler)
 	return
