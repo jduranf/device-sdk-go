@@ -30,6 +30,10 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 		return handleAddresssable(method, cbAlert.Id)
 	} else if cbAlert.ActionType == models.PROFILE {
 		return handleProfile(method, cbAlert.Id)
+	} else if cbAlert.ActionType == models.SCHEDULE {
+		return handleSchedule(method, cbAlert.Id)
+	} else if cbAlert.ActionType == models.SCHEDULEEVENT {
+		return handleScheduleEvent(method, cbAlert.Id)
 	}
 
 	common.LoggingClient.Error(fmt.Sprintf("Invalid callback action type: %s", cbAlert.ActionType))
@@ -39,33 +43,33 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 
 func handleDevice(method string, id string) common.AppError {
 	if method == http.MethodPost {
-		dev, err := common.DeviceClient.Device(id)
+		device, err := common.DeviceClient.Device(id)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
 			return appErr
 		}
 
-		err = cache.Devices().Add(dev)
+		_, exist := cache.Profiles().ForName(device.Profile.Name)
+		if exist == false {
+			err = cache.Profiles().Add(device.Profile)
+			if err == nil {
+				provision.CreateDescriptorsFromProfile(&device.Profile)
+				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Id.Hex()))
+			} else {
+				appErr := common.NewServerError(err.Error(), err)
+				common.LoggingClient.Error(fmt.Sprintf("Couldn't add device profile %s: %v", device.Profile.Name, err.Error()))
+				return appErr
+			}
+		}
+
+		err = cache.Devices().Add(device)
 		if err == nil {
 			common.LoggingClient.Info(fmt.Sprintf("Added device %s", id))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Couldn't add device %s: %v", id, err.Error()))
 			return appErr
-		}
-
-		_, exist := cache.Profiles().ForId(dev.Profile.Id.Hex())
-		if exist == false {
-			err = cache.Profiles().Add(dev.Profile)
-			if err == nil {
-				provision.CreateDescriptorsFromProfile(&dev.Profile)
-				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", dev.Profile.Id.Hex()))
-			} else {
-				appErr := common.NewServerError(err.Error(), err)
-				common.LoggingClient.Error(fmt.Sprintf("Couldn't add device profile %s: %v", dev.Profile.Id.Hex(), err.Error()))
-				return appErr
-			}
 		}
 	} else if method == http.MethodPut {
 		dev, err := common.DeviceClient.Device(id)
@@ -148,6 +152,102 @@ func handleProfile(method string, id string) common.AppError {
 	} else {
 		common.LoggingClient.Error(fmt.Sprintf("Invalid device profile method: %s", method))
 		appErr := common.NewBadRequestError("Invalid device profile method", nil)
+		return appErr
+	}
+
+	return nil
+}
+
+func handleSchedule(method string, id string) common.AppError {
+	if method == http.MethodPut {
+		sch, err := common.ScheduleClient.Schedule(id)
+		if err != nil {
+			appErr := common.NewBadRequestError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Cannot find the schedule %s from Core Metadata: %v", id, err))
+			return appErr
+		}
+
+		err = cache.Schedules().Update(sch)
+		if err == nil {
+			common.LoggingClient.Info(fmt.Sprintf("Updated schedule %s", id))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't update schedule %s: %v", id, err.Error()))
+			return appErr
+		}
+	} else {
+		common.LoggingClient.Error(fmt.Sprintf("Invalid schedule method: %s", method))
+		appErr := common.NewBadRequestError("Invalid schedule method", nil)
+		return appErr
+	}
+
+	return nil
+}
+
+func handleScheduleEvent(method string, id string) common.AppError {
+	if method == http.MethodPost {
+		schEvt, err := common.ScheduleEventClient.ScheduleEvent(id)
+		if err != nil {
+			appErr := common.NewBadRequestError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Cannot find the schedule event %s from Core Metadata: %v", id, err))
+			return appErr
+		}
+
+		_, exist := cache.Schedules().ForName(schEvt.Schedule)
+		if exist == false {
+			sch, err := common.ScheduleClient.ScheduleForName(schEvt.Schedule)
+			if err != nil {
+				appErr := common.NewBadRequestError(err.Error(), err)
+				common.LoggingClient.Error(fmt.Sprintf("Cannot find the schedule %s from Core Metadata: %v", schEvt.Schedule, err))
+				return appErr
+			}
+
+			err = cache.Schedules().Add(sch)
+			if err == nil {
+				common.LoggingClient.Info(fmt.Sprintf("Added schedule %s", sch.Id.Hex()))
+			} else {
+				appErr := common.NewServerError(err.Error(), err)
+				common.LoggingClient.Error(fmt.Sprintf("Couldn't add schedule %s: %v", schEvt.Schedule, err.Error()))
+				return appErr
+			}
+		}
+
+		err = cache.ScheduleEvents().Add(schEvt)
+		if err == nil {
+			common.LoggingClient.Info(fmt.Sprintf("Added schedule event %s", id))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't add device %s: %v", id, err.Error()))
+			return appErr
+		}
+	} else if method == http.MethodPut {
+		schEvt, err := common.ScheduleEventClient.ScheduleEvent(id)
+		if err != nil {
+			appErr := common.NewBadRequestError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Cannot find the schedule event %s from Core Metadata: %v", id, err))
+			return appErr
+		}
+
+		err = cache.ScheduleEvents().Update(schEvt)
+		if err == nil {
+			common.LoggingClient.Info(fmt.Sprintf("Updated schedule event %s", id))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't update schedule event %s: %v", id, err.Error()))
+			return appErr
+		}
+	} else if method == http.MethodDelete {
+		err := cache.ScheduleEvents().Remove(id)
+		if err == nil {
+			common.LoggingClient.Info(fmt.Sprintf("Removed schedule event %s", id))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't remove schedule event %s: %v", id, err.Error()))
+			return appErr
+		}
+	} else {
+		common.LoggingClient.Error(fmt.Sprintf("Invalid schedule event method type: %s", method))
+		appErr := common.NewBadRequestError("Invalid schedule event method", nil)
 		return appErr
 	}
 
