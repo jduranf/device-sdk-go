@@ -5,7 +5,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package handler
+package controller
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -214,6 +215,7 @@ func handleScheduleEvent(method string, id string) common.AppError {
 
 		err = cache.ScheduleEvents().Add(schEvt)
 		if err == nil {
+			scheduler.AddScheduleEvent(schEvt)
 			common.LoggingClient.Info(fmt.Sprintf("Added schedule event %s", id))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
@@ -228,8 +230,11 @@ func handleScheduleEvent(method string, id string) common.AppError {
 			return appErr
 		}
 
+		formerSchEvt, _ := cache.ScheduleEvents().ForId(id)
 		err = cache.ScheduleEvents().Update(schEvt)
 		if err == nil {
+			scheduler.RemoveScheduleEvent(formerSchEvt.Name)
+			scheduler.AddScheduleEvent(schEvt)
 			common.LoggingClient.Info(fmt.Sprintf("Updated schedule event %s", id))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
@@ -237,8 +242,10 @@ func handleScheduleEvent(method string, id string) common.AppError {
 			return appErr
 		}
 	} else if method == http.MethodDelete {
+		schEvt, _ := cache.ScheduleEvents().ForId(id)
 		err := cache.ScheduleEvents().Remove(id)
 		if err == nil {
+			scheduler.RemoveScheduleEvent(schEvt.Name)
 			common.LoggingClient.Info(fmt.Sprintf("Removed schedule event %s", id))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)

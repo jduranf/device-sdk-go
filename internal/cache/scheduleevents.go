@@ -9,11 +9,13 @@ package cache
 
 import (
 	"fmt"
+
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 type ScheduleEventCache interface {
 	ForName(name string) (models.ScheduleEvent, bool)
+	ForId(id string) (models.ScheduleEvent, bool)
 	All() []models.ScheduleEvent
 	Add(schEvt models.ScheduleEvent) error
 	Update(schEvt models.ScheduleEvent) error
@@ -36,6 +38,20 @@ type scheduleEventCache struct {
 func (s *scheduleEventCache) ForName(name string) (models.ScheduleEvent, bool) {
 	se, ok := s.seMap[name]
 	return se, ok
+}
+
+// ForId returns a schedule event with the given schedule event id.
+func (s *scheduleEventCache) ForId(id string) (models.ScheduleEvent, bool) {
+	name, ok := s.nameMap[id]
+	if !ok {
+		return models.ScheduleEvent{}, ok
+	}
+
+	if schEvt, ok := s.seMap[name]; ok {
+		return schEvt, ok
+	} else {
+		return models.ScheduleEvent{}, ok
+	}
 }
 
 func (s *scheduleEventCache) All() []models.ScheduleEvent {

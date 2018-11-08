@@ -72,7 +72,7 @@ func callbackFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	appErr := handler.CallbackHandler(cbAlert, req.Method)
+	appErr := CallbackHandler(cbAlert, req.Method)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else {
