@@ -25,14 +25,19 @@ import (
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
 func CommandHandler(vars map[string]string, body string, method string) (*models.Event, common.AppError) {
-	id := vars["id"]
+	dKey := vars["id"]
 	cmd := vars["command"]
 
-	// TODO - models.Device isn't thread safe currently
-	d, ok := cache.Devices().ForId(id)
+	var ok bool
+	var d models.Device
+	if dKey != "" {
+		d, ok = cache.Devices().ForId(dKey)
+	} else {
+		dKey = vars["name"]
+		d, ok = cache.Devices().ForName(dKey)
+	}
 	if !ok {
-		// TODO: standardize error message format (use of prefix)
-		msg := fmt.Sprintf("Device: %s not found; %s", id, method)
+		msg := fmt.Sprintf("Device: %s not found; %s", dKey, method)
 		common.LoggingClient.Error(msg)
 		return nil, common.NewNotFoundError(msg, nil)
 	}
@@ -137,8 +142,8 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 
 		err = transformer.CheckAssertion(cv, do.Properties.Value.Assertion, device)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %s", cv.String(), err))
-			transformsOK = false
+			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
+			cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), do.Properties.Value.Assertion))
 		}
 
 		if len(cv.RO.Mappings) > 0 {
@@ -297,7 +302,7 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_mod
 	var err error
 	var value interface{}
 	var t ds_models.ValueType
-	vd, ok := cache.ValueDescriptors().ForName(ro.Object)
+	vd, ok := cache.ValueDescriptors().ForName(ro.Parameter)
 	if !ok {
 		msg := fmt.Sprintf("Handler - Command: The parameter %s cannot find the matched Value Descriptor", ro.Parameter)
 		common.LoggingClient.Error(msg)
