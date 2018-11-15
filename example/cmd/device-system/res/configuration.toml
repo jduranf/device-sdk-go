@@ -1,9 +1,9 @@
 [Service]
 Host = "localhost"
-Port = 49991
+Port = 49999
 ConnectRetries = 3
 Labels = []
-OpenMsg = "device Modbus started"
+OpenMsg = "device system started"
 ReadMaxLimit = 256
 Timeout = 5000
 EnableAsyncReadings = false
@@ -45,9 +45,19 @@ FailWaitTime = 10
   MaxCmdValueLen = 256
   RemoveCmd = ""
   RemoveCmdArgs = ""
-  ProfilesDir = "./res"
+  ProfilesDir = "/etc/edgex/device-system"
 
 [Logging]
 EnableRemote = true
 File = "./device-modbus.log"
 Level = "INFO"
+
+[[DeviceList]]
+  Name = "device-system"
+  Profile = "system-profile"
+  Description = "EDS sytem device"
+  Labels = [ "EDS", "system" ]
+  [DeviceList.Addressable]
+    Address = "localhost"
+    Port = 49999
+    Protocol = "http"

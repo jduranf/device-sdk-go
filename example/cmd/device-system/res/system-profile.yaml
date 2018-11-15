@@ -1,0 +1,262 @@
+# Copyright 2018 Circutor. All rights reserved.
+name:         "system-profile"
+manufacturer: "Circutor"
+model:        "EDS"
+description:  "System Profile"
+labels:
+ - "EDS"
+ - "system"
+deviceResources:
+    -
+        name: "RAM_USAGE"
+        description: "Used RAM in %"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "percent" }
+    -
+        name: "CPU_USAGE"
+        description: "Used CPU in %"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "percent" }
+    -
+        name: "DISK_USAGE"
+        description: "Used disk in %"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "percent" }
+    -
+        name: "UPTIME"
+        description: "Uptime"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "s" }
+    -
+        name: "ETH_TX"
+        description: "Ethernet TX usage"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "b/s" }
+    -
+        name: "ETH_RX"
+        description: "Ethernet RX usage"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "b/s" }
+    -
+        name: "STATUS_O1"
+        description: "Output 1 status"
+        properties:
+            value:
+                { type: "Boolean", readWrite: "RW" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "" }
+    -
+        name: "STATUS_O2"
+        description: "Output 2 status"
+        properties:
+            value:
+                { type: "Boolean", readWrite: "RW" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "" }
+    -
+        name: "REBOOT"
+        description: "Reboot Device"
+        properties:
+            value:
+                { type: "Boolean", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "" }
+
+resources:
+    -
+        name: "RAM_USAGE"
+        get:
+          - { index: "1", operation: "get", object: "RAM_USAGE", parameter: "RAM_USAGE"}
+    -
+        name: "CPU_USAGE"
+        get:
+          - { index: "1", operation: "get", object: "CPU_USAGE", parameter: "CPU_USAGE" }
+    -
+        name: "DISK_USAGE"
+        get:
+          - { index: "1", operation: "get", object: "DISK_USAGE", parameter: "DISK_USAGE" }
+    -
+        name: "UPTIME"
+        get:
+          - { index: "1", operation: "get", object: "UPTIME", parameter: "UPTIME" }
+    -
+        name: "ETH_TX"
+        get:
+          - { index: "1", operation: "get", object: "ETH_TX", parameter: "ETH_TX" }
+    -
+        name: "ETH_RX"
+        get:
+          - { index: "1", operation: "get", object: "ETH_RX", parameter: "ETH_RX" }
+    -
+        name: "STATUS_O1"
+        get:
+          - { index: "1", operation: "get", object: "STATUS_O1", parameter: "STATUS_O1" }
+    -
+        name: "STATUS_O2"
+        get:
+          - { index: "1", operation: "get", object: "STATUS_O2", parameter: "STATUS_O2" }
+    -
+        name: "REBOOT"
+        get:
+          - { index: "1", operation: "get", object: "REBOOT", parameter: "REBOOT" }
+    -
+        name: "SYSTEM_STATUS"
+        get:
+          - { index: "1", operation: "get", object: "RAM_USAGE", parameter: "RAM_USAGE" }
+          - { index: "2", operation: "get", object: "CPU_USAGE", parameter: "CPU_USAGE" }
+          - { index: "3", operation: "get", object: "DISK_USAGE", parameter: "DISK_USAGE" }
+          - { index: "4", operation: "get", object: "UPTIME", parameter: "UPTIME" }
+          - { index: "5", operation: "get", object: "ETH_TX", parameter: "ETH_TX" }
+          - { index: "6", operation: "get", object: "ETH_RX", parameter: "ETH_RX" }
+          - { index: "7", operation: "get", object: "STATUS_O1", parameter: "STATUS_O1" }
+          - { index: "8", operation: "get", object: "STATUS_O2", parameter: "STATUS_O2" }
+
+commands:
+    -
+        name: "RAM_USAGE"
+        get:
+            path: "/api/v1/device/{deviceId}/RAM_USAGE"
+            responses:
+            -
+                code:           "200"
+                description:    "Get used RAM value in %."
+                expectedValues: ["RAM_USAGE"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "CPU_USAGE"
+        get:
+            path: "/api/v1/device/{deviceId}/CPU_USAGE"
+            responses:
+            -
+                code:           "200"
+                description:    "Get CPU Usage in %"
+                expectedValues: ["CPU_USAGE"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "DISK_USAGE"
+        get:
+            path: "/api/v1/device/{deviceId}/DISK_USAGE"
+            responses:
+            -
+                code:           "200"
+                description:    "Get usage Disk of device in %"
+                expectedValues: ["DISK_USAGE"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "UPTIME"
+        get:
+            path: "/api/v1/device/{deviceId}/UPTIME"
+            responses:
+            -
+                code:           "200"
+                description:    "Get Uptime device in seconds."
+                expectedValues: ["UPTIME"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "ETH_TX"
+        get:
+            path: "/api/v1/device/{deviceId}/ETH_TX"
+            responses:
+            -
+                code:           "200"
+                description:    "Get Ethernet TX Usage"
+                expectedValues: ["ETH_TX"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "ETH_RX"
+        get:
+            path: "/api/v1/device/{deviceId}/ETH_RX"
+            responses:
+            -
+                code:           "200"
+                description:    "Get Ethernet RX Usage"
+                expectedValues: ["ETH_RX"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "STATUS_O1"
+        get:
+            path: "/api/v1/device/{deviceId}/STATUS_O1"
+            responses:
+            -
+                code:           "200"
+                description:    "Get Status of Output1"
+                expectedValues: ["STATUS_O1"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "STATUS_O2"
+        get:
+            path: "/api/v1/device/{deviceId}/STATUS_O2"
+            responses:
+            -
+                code:           "200"
+                description:    "Get Status of Output2"
+                expectedValues: ["STATUS_O2"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "REBOOT"
+        get:
+            path: "/api/v1/device/{deviceId}/REBOOT"
+            responses:
+            -
+                code:           "200"
+                description:    "Reboot Device"
+                expectedValues: ["REBOOT"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "SYSTEM_STATUS"
+        get:
+            path: "/api/v1/device/{deviceId}/SYSTEM_STATUS"
+            responses:
+            -
+                code:           "200"
+                description:    "Get System Info"
+                expectedValues: ["RAM_USAGE","CPU_USAGE","DISK_USAGE","UPTIME","ETH_TX","ETH_RX","STATUS_O1","STATUS_O2"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
