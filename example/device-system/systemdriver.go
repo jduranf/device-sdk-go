@@ -114,7 +114,9 @@ func getValue(request string) (value uint64, err error) {
 			return
 		}
 
-		value = (uint64)(((info.Totalram - info.Freeram) * 100) / info.Totalram)
+		totalRAM := uint64(info.Totalram)
+		freeRAM := uint64(info.Freeram)
+		value = ((totalRAM - freeRAM) * 100) / totalRAM
 	} else if request == "DISK_USAGE" {
 		var stat syscall.Statfs_t
 		err = syscall.Statfs("/", &stat)
@@ -122,24 +124,20 @@ func getValue(request string) (value uint64, err error) {
 			return
 		}
 
-		free := stat.Bfree * uint64(stat.Bsize)
-		total := stat.Blocks * uint64(stat.Bsize)
+		free := uint64(stat.Bfree) * uint64(stat.Bsize)
+		total := uint64(stat.Blocks) * uint64(stat.Bsize)
 		used := total - free
 		value = (used * 100) / total
 	} else if request == "UPTIME" {
-		value = (uint64)(getUptime())
+		value = uint64(getUptime())
 	} else if request == "STATUS_O1" {
-		var input string
-		input, _ = readFile("/sys/class/gpio/gpio9/value")
-		if input == "1" {
-			value = 0
-		}
+		inputStr, _ := readFile("/sys/class/gpio/gpio9/value")
+		input, _ := strconv.Atoi(inputStr[0:1])
+		value = uint64(input)
 	} else if request == "STATUS_O2" {
-		var input string
-		input, _ = readFile("/sys/class/gpio/gpio136/value")
-		if input == "1" {
-			value = 0
-		}
+		inputStr, _ := readFile("/sys/class/gpio/gpio136/value")
+		input, _ := strconv.Atoi(inputStr[0:1])
+		value = uint64(input)
 	} else if request == "REBOOT" {
 		_, err = exec.Command("reboot").Output()
 		if err != nil {
@@ -213,12 +211,12 @@ func refreshStats() {
 			currentNoIdle := user + nice + system + irq + softirq + steal
 			currentTotal := currentIdle + currentNoIdle
 
-			total := currentTotal - statsValues.cpuTotal
-			idled := currentIdle - statsValues.cpuIdle
+			total := uint64(currentTotal - statsValues.cpuTotal)
+			idled := uint64(currentIdle - statsValues.cpuIdle)
 
 			statsValues.cpuIdle = currentIdle
 			statsValues.cpuTotal = currentTotal
-			statsValues.cpuUsage = (uint64)(((total - idled) * 100) / total)
+			statsValues.cpuUsage = uint64(((total - idled) * 100) / total)
 		}
 
 		// Refresh ethernet usage
@@ -235,9 +233,9 @@ func refreshStats() {
 				rxBytes, _ := strconv.Atoi(transf[0])
 
 				currentUptime := getUptime()
-				deltaTime := (int)(currentUptime - statsValues.uptime)
-				statsValues.usageRx = (uint64)((rxBytes - statsValues.rxBytes) / deltaTime)
-				statsValues.usageTx = (uint64)((txBytes - statsValues.txBytes) / deltaTime)
+				deltaTime := int(currentUptime - statsValues.uptime)
+				statsValues.usageRx = uint64((rxBytes - statsValues.rxBytes) / deltaTime)
+				statsValues.usageTx = uint64((txBytes - statsValues.txBytes) / deltaTime)
 				statsValues.rxBytes = rxBytes
 				statsValues.txBytes = txBytes
 				statsValues.uptime = currentUptime
