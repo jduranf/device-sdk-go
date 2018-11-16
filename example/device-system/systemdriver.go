@@ -132,12 +132,16 @@ func getValue(request string) (value uint64, err error) {
 		value = uint64(getUptime())
 	} else if request == "STATUS_O1" {
 		inputStr, _ := readFile("/sys/class/gpio/gpio9/value")
-		input, _ := strconv.Atoi(inputStr[0:1])
-		value = uint64(input)
+		if len(inputStr) != 0 {
+			input, _ := strconv.Atoi(inputStr[0:1])
+			value = uint64(input)
+		}
 	} else if request == "STATUS_O2" {
 		inputStr, _ := readFile("/sys/class/gpio/gpio136/value")
-		input, _ := strconv.Atoi(inputStr[0:1])
-		value = uint64(input)
+		if len(inputStr) != 0 {
+			input, _ := strconv.Atoi(inputStr[0:1])
+			value = uint64(input)
+		}
 	} else if request == "REBOOT" {
 		_, err = exec.Command("reboot").Output()
 		if err != nil {
