@@ -45,7 +45,7 @@ FailWaitTime = 10
   MaxCmdValueLen = 256
   RemoveCmd = ""
   RemoveCmdArgs = ""
-  ProfilesDir = "/etc/edgex/device-system"
+  ProfilesDir = "./res"
 
 [Logging]
 EnableRemote = true
