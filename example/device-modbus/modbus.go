@@ -28,9 +28,11 @@ const (
 )
 
 const (
-	modbusTCP  = "HTTP"
-	modbusRTU  = "OTHER"
-	comTimeout = 2000
+	modbusTCP   = "TCP"
+	modbusHTTP  = "HTTP"
+	modbusRTU   = "RTU"
+	modbusOTHER = "OTHER"
+	comTimeout  = 2000
 )
 
 type ModbusDevice struct {
@@ -50,9 +52,12 @@ type rtuConfig struct {
 }
 
 type modbusReadConfig struct {
-	function string
-	address  uint16
-	quantity uint16
+	function   string
+	address    uint16
+	size       uint16
+	vType      string
+	isByteSwap bool
+	isWordSwap bool
 }
 
 var (
@@ -68,7 +73,7 @@ func initModbusCache() {
 }
 
 func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err error) {
-	if addressable.Protocol == modbusTCP {
+	if addressable.Protocol == modbusTCP || addressable.Protocol == modbusHTTP {
 		// Get TCP configuration
 		var address string
 		address, err = getTCPConfig(addressable)
@@ -94,7 +99,7 @@ func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err
 			modbusDevice.mutex.Unlock()
 			return
 		}
-	} else if addressable.Protocol == modbusRTU {
+	} else if addressable.Protocol == modbusRTU || addressable.Protocol == modbusOTHER {
 		// Get RTU configuration
 		var config rtuConfig
 		config, err = getRTUConfig(addressable)
@@ -254,23 +259,17 @@ func connectRTUDevice(modbusDevice *ModbusDevice) (err error) {
 func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err error) {
 
 	// Get read function
-	if len(do.Attributes) != 1 {
+	if len(do.Attributes) < 5 {
 		err = fmt.Errorf("Invalid number attributes: %v", do.Attributes)
 		return
 	}
-	if _, found := do.Attributes[modbusHoldingRegister]; found {
-		readConfig.function = modbusHoldingRegister
-	} else if _, found := do.Attributes[modbusInputRegister]; found {
-		readConfig.function = modbusInputRegister
-	} else if _, found := do.Attributes[modbusCoil]; found {
-		readConfig.function = modbusCoil
-	} else {
+	readConfig.function = do.Attributes["PrimaryTable"].(string)
+	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" {
 		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
 		return
 	}
-
 	//	Get address
-	strAddress, ok := do.Attributes[readConfig.function].(string)
+	strAddress, ok := do.Attributes["StartingAddress"].(string)
 	if ok == false {
 		err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
 		return
@@ -283,25 +282,66 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 	}
 	readConfig.address = uint16(add)
 
-	// Get number of registers
-	var numRegs int
-	numRegs, err = strconv.Atoi(do.Properties.Value.Size)
-	if err != nil {
-		err = fmt.Errorf("Invalid number of registers: %v", err)
+	// Get number of registers and value Type
+	vType := do.Attributes["ValueType"].(string)
+	if vType == "UINT8" || vType == "INT8" || vType == "UINT16" || vType == "INT16" || vType == "FLOAT16" {
+		readConfig.size = 1
+		readConfig.vType = vType
+	} else if vType == "UINT32" || vType == "INT32" || vType == "FLOAT32" {
+		readConfig.size = 2
+		readConfig.vType = vType
+	} else if vType == "UINT64" || vType == "INT64" || vType == "FLOAT64" {
+		readConfig.size = 4
+		readConfig.vType = vType
+	} else if vType == "BOOL" || vType == "STRING" || vType == "ARRAY" {
+		readConfig.vType = vType
+		nRegs, ok := do.Attributes["Length"].(string)
+		if ok == false {
+			err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
+			return
+		}
+		var reg int
+		reg, err = strconv.Atoi(nRegs)
+		if err != nil {
+			err = fmt.Errorf("Invalid ValueType value: %v", err)
+			return
+		}
+		readConfig.size = uint16(reg)
+	} else {
+		err = fmt.Errorf("Invalid ValueType value: %v", err)
 		return
 	}
-	readConfig.quantity = uint16(numRegs)
+
+	// Get Swap
+	isByteSwap := do.Attributes["IsByteSwap"].(string)
+	if isByteSwap == "false" || isByteSwap == "False" || isByteSwap == "FALSE" {
+		readConfig.isByteSwap = false
+	} else if isByteSwap == "true" || isByteSwap == "True" || isByteSwap == "TRUE" {
+		readConfig.isByteSwap = true
+	} else {
+		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
+		return
+	}
+	isWordSwap := do.Attributes["IsWordSwap"].(string)
+	if isWordSwap == "false" || isWordSwap == "False" || isWordSwap == "FALSE" {
+		readConfig.isByteSwap = false
+	} else if isWordSwap == "true" || isWordSwap == "True" || isWordSwap == "TRUE" {
+		readConfig.isByteSwap = true
+	} else {
+		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
+		return
+	}
 
 	return
 }
 
 func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, error) {
 	if readConfig.function == modbusHoldingRegister {
-		return client.ReadHoldingRegisters(readConfig.address, readConfig.quantity)
+		return client.ReadHoldingRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusInputRegister {
-		return client.ReadInputRegisters(readConfig.address, readConfig.quantity)
+		return client.ReadInputRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusCoil {
-		return client.ReadCoils(readConfig.address, readConfig.quantity)
+		return client.ReadCoils(readConfig.address, readConfig.size)
 	}
 
 	err := fmt.Errorf("Invalid read function: %s", readConfig.function)
