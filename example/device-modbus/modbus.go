@@ -284,7 +284,7 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 
 	// Get number of registers and value Type
 	vType := do.Attributes["ValueType"].(string)
-	if vType == "UINT8" || vType == "INT8" || vType == "UINT16" || vType == "INT16" || vType == "FLOAT16" {
+	if vType == "UINT8" || vType == "INT8" || vType == "UINT16" || vType == "INT16" || vType == "FLOAT16" || vType == "BOOL" {
 		readConfig.size = 1
 		readConfig.vType = vType
 	} else if vType == "UINT32" || vType == "INT32" || vType == "FLOAT32" {
@@ -293,7 +293,7 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 	} else if vType == "UINT64" || vType == "INT64" || vType == "FLOAT64" {
 		readConfig.size = 4
 		readConfig.vType = vType
-	} else if vType == "BOOL" || vType == "STRING" || vType == "ARRAY" {
+	} else if vType == "STRING" || vType == "ARRAY" {
 		readConfig.vType = vType
 		nRegs, ok := do.Attributes["Length"].(string)
 		if ok == false {
