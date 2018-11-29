@@ -10,10 +10,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"math"
 	"strconv"
-
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -378,3 +377,4 @@ func MapCommandValue(value *ds_models.CommandValue) (*ds_models.CommandValue, bo
 	}
 	return result, ok
 }
+

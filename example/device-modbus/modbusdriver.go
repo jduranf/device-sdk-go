@@ -10,11 +10,7 @@
 package modbus
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
-	"math"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -73,102 +69,45 @@ func (m *ModbusDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 			return
 		}
 
-		now := time.Now().UnixNano() / int64(time.Millisecond)
-		var result = &ds_models.CommandValue{}
-
 		var valueInt int64
 		var valueFloat float64
 		var valueBool bool
 		var valueString string
-		var difType string
-
-		switch readConfig.vType {
-		case "UINT16":
-			valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "UINT32":
-			valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "UINT64":
-			valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "INT16":
-			valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "INT32":
-			valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "INT64":
-			valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(data, readConfig.isByteSwap, readConfig.isWordSwap)))
-			difType = "Int"
-		case "FLOAT32":
-			valueInt = int64(binary.BigEndian.Uint32(data))
-			valueFloat = math.Float64frombits(uint64(valueInt))
-			difType = "Float"
-		case "FLOAT64":
-			valueInt = int64(binary.BigEndian.Uint64(data))
-			valueFloat = math.Float64frombits(uint64(valueInt))
-			difType = "Float"
-		case "BOOL":
-			if reqs[i].DeviceObject.Properties.Value.Type == "Bool" {
-				difType = "Bool"
-				for i := 0; i < len(data); i++ {
-					if data[i] == 0 {
-						valueBool = false
-					} else {
-						valueBool = true
-						i = len(data)
-					}
-				}
-			} else if reqs[i].DeviceObject.Properties.Value.Type == "String" {
-				difType = "String"
-				var buf bytes.Buffer
-				for _, b := range data {
-					fmt.Fprintf(&buf, "%08b ", b)
-				}
-				buf.Truncate(buf.Len() - 1) // To remove extra space
-				valueString = string(buf.Bytes())
-			}
-		case "STRING":
-			//valueString = string(data[:]) // sin filtrar caracteres no printables
-			var buffer bytes.Buffer // filtrando caracteres no printables
-			for i := 0; i < len(data); i++ {
-				if data[i] >= 0x20 && data[i] <= 0x7F {
-					valueSt := string(data[i])
-					buffer.WriteString(valueSt)
-				}
-			}
-			valueString = buffer.String()
-			difType = "String"
-		case "ARRAY":
-			valueString = hex.EncodeToString(data)
-			difType = "String"
-		default:
-			err = fmt.Errorf("return result fail, none supported value type: %v", reqs[i].DeviceObject.Attributes["ValueType"].(string))
+		difType := "difType"
+		err = readResult(readConfig, data, &difType, &valueInt, &valueFloat, &valueBool, &valueString)
+		if err != nil {
+			m.lc.Warn(fmt.Sprintf("Error reading Modbus data: %v", err))
+			return
 		}
 
-		if reqs[i].DeviceObject.Properties.Value.Type == "Bool" {
+		//res[i] = setResult (result reqs []ds_models.CommandRequest)
+
+		now := time.Now().UnixNano() / int64(time.Millisecond)
+		var tresult = &ds_models.CommandValue{}
+
+		if readConfig.resultType == "Bool" {
 			if difType == "Bool" {
-				result, err = ds_models.NewBoolValue(&reqs[i].RO, now, valueBool)
+
+				tresult, err = ds_models.NewBoolValue(&reqs[i].RO, now, valueBool)
 			} else if difType == "String" {
-				result = ds_models.NewStringValue(&reqs[i].RO, now, valueString)
+				tresult = ds_models.NewStringValue(&reqs[i].RO, now, valueString)
 			}
-		} else if reqs[i].DeviceObject.Properties.Value.Type == "String" {
-			result = ds_models.NewStringValue(&reqs[i].RO, now, valueString)
-		} else if reqs[i].DeviceObject.Properties.Value.Type == "Integer" {
+		} else if readConfig.resultType == "String" {
+			tresult = ds_models.NewStringValue(&reqs[i].RO, now, valueString)
+		} else if readConfig.resultType == "Integer" {
 			if difType == "Float" {
-				result, err = ds_models.NewInt64Value(&reqs[i].RO, now, int64(valueFloat))
+				tresult, err = ds_models.NewInt64Value(&reqs[i].RO, now, int64(valueFloat))
 			} else if difType == "Int" {
-				result, err = ds_models.NewInt64Value(&reqs[i].RO, now, valueInt)
+				tresult, err = ds_models.NewInt64Value(&reqs[i].RO, now, valueInt)
 			}
-		} else if reqs[i].DeviceObject.Properties.Value.Type == "Float" {
+		} else if readConfig.resultType == "Float" {
 			if difType == "Float" {
-				result, err = ds_models.NewFloat64Value(&reqs[i].RO, now, valueFloat)
+				tresult, err = ds_models.NewFloat64Value(&reqs[i].RO, now, valueFloat)
 			} else if difType == "Int" {
-				result, err = ds_models.NewFloat64Value(&reqs[i].RO, now, float64(valueInt))
+				tresult, err = ds_models.NewFloat64Value(&reqs[i].RO, now, float64(valueInt))
 			}
 		}
-		res[i] = result
+		res[i] = tresult
 	}
 	return
 }

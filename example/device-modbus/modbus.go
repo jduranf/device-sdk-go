@@ -11,7 +11,11 @@
 package modbus
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -58,6 +62,7 @@ type modbusReadConfig struct {
 	vType      string
 	isByteSwap bool
 	isWordSwap bool
+	resultType string
 }
 
 var (
@@ -259,7 +264,7 @@ func connectRTUDevice(modbusDevice *ModbusDevice) (err error) {
 func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err error) {
 
 	// Get read function
-	if len(do.Attributes) < 5 {
+	if len(do.Attributes) < 3 {
 		err = fmt.Errorf("Invalid number attributes: %v", do.Attributes)
 		return
 	}
@@ -303,35 +308,36 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 		var reg int
 		reg, err = strconv.Atoi(nRegs)
 		if err != nil {
-			err = fmt.Errorf("Invalid ValueType value: %v", err)
+			err = fmt.Errorf("Invalid Length value: %v", err)
 			return
 		}
 		readConfig.size = uint16(reg)
 	} else {
-		err = fmt.Errorf("Invalid ValueType value: %v", err)
+		err = fmt.Errorf("Invalid ValueType: %v", err)
 		return
 	}
 
 	// Get Swap
 	isByteSwap := do.Attributes["IsByteSwap"].(string)
-	if isByteSwap == "false" || isByteSwap == "False" || isByteSwap == "FALSE" {
-		readConfig.isByteSwap = false
-	} else if isByteSwap == "true" || isByteSwap == "True" || isByteSwap == "TRUE" {
+	if isByteSwap == "true" || isByteSwap == "True" || isByteSwap == "TRUE" {
 		readConfig.isByteSwap = true
 	} else {
-		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
-		return
+		readConfig.isByteSwap = false
 	}
 	isWordSwap := do.Attributes["IsWordSwap"].(string)
-	if isWordSwap == "false" || isWordSwap == "False" || isWordSwap == "FALSE" {
-		readConfig.isByteSwap = false
-	} else if isWordSwap == "true" || isWordSwap == "True" || isWordSwap == "TRUE" {
+	if isWordSwap == "true" || isWordSwap == "True" || isWordSwap == "TRUE" {
 		readConfig.isByteSwap = true
 	} else {
-		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
-		return
+		readConfig.isByteSwap = false
 	}
 
+	if do.Properties.Value.Type == "Bool" || do.Properties.Value.Type == "String" || do.Properties.Value.Type == "Integer" ||
+		do.Properties.Value.Type == "Float" || do.Properties.Value.Type == "Json" {
+		readConfig.resultType = do.Properties.Value.Type
+	} else {
+		err = fmt.Errorf("Invalid resultType: %v", do.Properties.Value.Type)
+		return
+	}
 	return
 }
 
@@ -346,4 +352,62 @@ func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, erro
 
 	err := fmt.Errorf("Invalid read function: %s", readConfig.function)
 	return nil, err
+}
+
+func readResult(readConf modbusReadConfig, dat []byte, difType *string, vint *int64, vfloat *float64, vbool *bool, vstring *string) error {
+
+	switch readConf.vType {
+	case "UINT16":
+		*vint = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "UINT32":
+		*vint = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "UINT64":
+		*vint = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "INT16":
+		*vint = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "INT32":
+		*vint = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "INT64":
+		*vint = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		*difType = "Int"
+	case "FLOAT32":
+		*vfloat = float64(math.Float32frombits(binary.BigEndian.Uint32(dat)))
+		*difType = "Float"
+	case "FLOAT64":
+		*vfloat = math.Float64frombits(binary.BigEndian.Uint64(dat))
+		*difType = "Float"
+	case "BOOL":
+		*difType = "Bool"
+		for i := 0; i < len(dat); i++ {
+			if dat[i] == 0 {
+				*vbool = false
+			} else {
+				*vbool = true
+				i = len(dat)
+			}
+		}
+
+	case "STRING":
+		var buffer bytes.Buffer
+		for i := 0; i < len(dat); i++ {
+			if dat[i] >= 0x20 && dat[i] <= 0x7F {
+				valueSt := string(dat[i])
+				buffer.WriteString(valueSt)
+			}
+		}
+		*vstring = buffer.String()
+		*difType = "String"
+	case "ARRAY":
+		*vstring = hex.EncodeToString(dat)
+		*difType = "String"
+	default:
+		err := fmt.Errorf("return result fail, none supported value type: %v", readConf.vType)
+		return err
+	}
+	return nil
 }
