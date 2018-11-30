@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/goburrow/modbus"
 )
@@ -354,44 +355,49 @@ func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, erro
 	return nil, err
 }
 
-func readResult(readConf modbusReadConfig, dat []byte, difType *string, vint *int64, vfloat *float64, vbool *bool, vstring *string) error {
+func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequest) (ds_models.CommandValue, error) {
+	var valueInt int64
+	var valueFloat float64
+	var valueBool bool
+	var valueString string
+	difType := "difType"
+	var tresult = &ds_models.CommandValue{}
 
 	switch readConf.vType {
 	case "UINT16":
-		*vint = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "UINT32":
-		*vint = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "UINT64":
-		*vint = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "INT16":
-		*vint = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "INT32":
-		*vint = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "INT64":
-		*vint = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
-		*difType = "Int"
+		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
 	case "FLOAT32":
-		*vfloat = float64(math.Float32frombits(binary.BigEndian.Uint32(dat)))
-		*difType = "Float"
+		valueFloat = float64(math.Float32frombits(binary.BigEndian.Uint32(dat)))
+		difType = "Float"
 	case "FLOAT64":
-		*vfloat = math.Float64frombits(binary.BigEndian.Uint64(dat))
-		*difType = "Float"
+		valueFloat = math.Float64frombits(binary.BigEndian.Uint64(dat))
+		difType = "Float"
 	case "BOOL":
-		*difType = "Bool"
+		difType = "Bool"
 		for i := 0; i < len(dat); i++ {
 			if dat[i] == 0 {
-				*vbool = false
+				valueBool = false
 			} else {
-				*vbool = true
+				valueBool = true
 				i = len(dat)
 			}
 		}
-
 	case "STRING":
 		var buffer bytes.Buffer
 		for i := 0; i < len(dat); i++ {
@@ -400,14 +406,100 @@ func readResult(readConf modbusReadConfig, dat []byte, difType *string, vint *in
 				buffer.WriteString(valueSt)
 			}
 		}
-		*vstring = buffer.String()
-		*difType = "String"
+		valueString = buffer.String()
+		difType = "String"
 	case "ARRAY":
-		*vstring = hex.EncodeToString(dat)
-		*difType = "String"
+		valueString = hex.EncodeToString(dat)
+		difType = "String"
 	default:
 		err := fmt.Errorf("return result fail, none supported value type: %v", readConf.vType)
-		return err
+		return *tresult, err
 	}
-	return nil
+
+	var err error
+	now := time.Now().UnixNano() / int64(time.Millisecond)
+	if readConf.resultType == "Bool" {
+		if difType == "Bool" {
+			tresult, err = ds_models.NewBoolValue(&creq.RO, now, valueBool)
+		} else if difType == "String" {
+			tresult = ds_models.NewStringValue(&creq.RO, now, valueString)
+		}
+	} else if readConf.resultType == "String" {
+		tresult = ds_models.NewStringValue(&creq.RO, now, valueString)
+	} else if readConf.resultType == "Integer" {
+		if difType == "Float" {
+			tresult, err = ds_models.NewInt64Value(&creq.RO, now, int64(valueFloat))
+		} else if difType == "Int" {
+			tresult, err = ds_models.NewInt64Value(&creq.RO, now, valueInt)
+		}
+	} else if readConf.resultType == "Float" {
+		if difType == "Float" {
+			tresult, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
+		} else if difType == "Int" {
+			tresult, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
+		}
+	}
+
+	return *tresult, err
+}
+
+func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte {
+
+	if !isByteSwap && !isWordSwap {
+		return dataBytes
+	}
+
+	if len(dataBytes) == 2 {
+		var newDataBytes = make([]byte, len(dataBytes))
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+		}
+		return newDataBytes
+	}
+	if len(dataBytes) == 4 {
+		var newDataBytes = make([]byte, len(dataBytes))
+
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+			newDataBytes[2] = dataBytes[3]
+			newDataBytes[3] = dataBytes[2]
+		}
+		if isWordSwap {
+			newDataBytes[0] = dataBytes[2]
+			newDataBytes[1] = dataBytes[3]
+			newDataBytes[2] = dataBytes[0]
+			newDataBytes[3] = dataBytes[1]
+		}
+		return newDataBytes
+	}
+	if len(dataBytes) == 8 {
+		var newDataBytes = make([]byte, len(dataBytes))
+
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+			newDataBytes[2] = dataBytes[3]
+			newDataBytes[3] = dataBytes[2]
+			newDataBytes[4] = dataBytes[5]
+			newDataBytes[5] = dataBytes[4]
+			newDataBytes[6] = dataBytes[7]
+			newDataBytes[7] = dataBytes[6]
+
+		}
+		if isWordSwap {
+			newDataBytes[0] = dataBytes[6]
+			newDataBytes[1] = dataBytes[7]
+			newDataBytes[2] = dataBytes[4]
+			newDataBytes[3] = dataBytes[5]
+			newDataBytes[4] = dataBytes[2]
+			newDataBytes[5] = dataBytes[3]
+			newDataBytes[6] = dataBytes[0]
+			newDataBytes[7] = dataBytes[1]
+		}
+		return newDataBytes
+	}
+
+	return dataBytes
 }
