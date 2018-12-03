@@ -361,7 +361,7 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 	var valueBool bool
 	var valueString string
 	difType := "difType"
-	var tresult = &ds_models.CommandValue{}
+	var result = &ds_models.CommandValue{}
 
 	switch readConf.vType {
 	case "UINT16":
@@ -395,7 +395,7 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 				valueBool = false
 			} else {
 				valueBool = true
-				i = len(dat)
+				break
 			}
 		}
 	case "STRING":
@@ -413,34 +413,34 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 		difType = "String"
 	default:
 		err := fmt.Errorf("return result fail, none supported value type: %v", readConf.vType)
-		return *tresult, err
+		return *result, err
 	}
 
 	var err error
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 	if readConf.resultType == "Bool" {
 		if difType == "Bool" {
-			tresult, err = ds_models.NewBoolValue(&creq.RO, now, valueBool)
+			result, err = ds_models.NewBoolValue(&creq.RO, now, valueBool)
 		} else if difType == "String" {
-			tresult = ds_models.NewStringValue(&creq.RO, now, valueString)
+			result = ds_models.NewStringValue(&creq.RO, now, valueString)
 		}
 	} else if readConf.resultType == "String" {
-		tresult = ds_models.NewStringValue(&creq.RO, now, valueString)
+		result = ds_models.NewStringValue(&creq.RO, now, valueString)
 	} else if readConf.resultType == "Integer" {
 		if difType == "Float" {
-			tresult, err = ds_models.NewInt64Value(&creq.RO, now, int64(valueFloat))
+			result, err = ds_models.NewInt64Value(&creq.RO, now, int64(valueFloat))
 		} else if difType == "Int" {
-			tresult, err = ds_models.NewInt64Value(&creq.RO, now, valueInt)
+			result, err = ds_models.NewInt64Value(&creq.RO, now, valueInt)
 		}
 	} else if readConf.resultType == "Float" {
 		if difType == "Float" {
-			tresult, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
+			result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
 		} else if difType == "Int" {
-			tresult, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
+			result, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
 		}
 	}
 
-	return *tresult, err
+	return *result, err
 }
 
 func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte {
