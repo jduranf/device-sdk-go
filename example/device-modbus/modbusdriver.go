@@ -11,7 +11,6 @@ package modbus
 
 import (
 	"fmt"
-	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
@@ -69,11 +68,15 @@ func (m *ModbusDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 			return
 		}
 
-		now := time.Now().UnixNano() / int64(time.Millisecond)
-		cv := &ds_models.CommandValue{RO: &reqs[i].RO, Origin: now, Type: ds_models.Uint16, NumericValue: data}
-		res[i] = cv
-	}
+		var result = &ds_models.CommandValue{}
+		*result, err = setResult(readConfig, data, reqs[i])
+		if err != nil {
+			m.lc.Warn(fmt.Sprintf("Error setting result Modbus data: %v", err))
+			return
+		}
 
+		res[i] = result
+	}
 	return
 }
 

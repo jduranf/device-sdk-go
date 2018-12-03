@@ -11,12 +11,17 @@
 package modbus
 
 import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/goburrow/modbus"
 )
@@ -28,9 +33,11 @@ const (
 )
 
 const (
-	modbusTCP  = "HTTP"
-	modbusRTU  = "OTHER"
-	comTimeout = 2000
+	modbusTCP   = "TCP"
+	modbusHTTP  = "HTTP"
+	modbusRTU   = "RTU"
+	modbusOTHER = "OTHER"
+	comTimeout  = 2000
 )
 
 type ModbusDevice struct {
@@ -50,9 +57,13 @@ type rtuConfig struct {
 }
 
 type modbusReadConfig struct {
-	function string
-	address  uint16
-	quantity uint16
+	function   string
+	address    uint16
+	size       uint16
+	vType      string
+	isByteSwap bool
+	isWordSwap bool
+	resultType string
 }
 
 var (
@@ -68,7 +79,7 @@ func initModbusCache() {
 }
 
 func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err error) {
-	if addressable.Protocol == modbusTCP {
+	if addressable.Protocol == modbusTCP || addressable.Protocol == modbusHTTP {
 		// Get TCP configuration
 		var address string
 		address, err = getTCPConfig(addressable)
@@ -94,7 +105,7 @@ func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err
 			modbusDevice.mutex.Unlock()
 			return
 		}
-	} else if addressable.Protocol == modbusRTU {
+	} else if addressable.Protocol == modbusRTU || addressable.Protocol == modbusOTHER {
 		// Get RTU configuration
 		var config rtuConfig
 		config, err = getRTUConfig(addressable)
@@ -254,23 +265,17 @@ func connectRTUDevice(modbusDevice *ModbusDevice) (err error) {
 func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err error) {
 
 	// Get read function
-	if len(do.Attributes) != 1 {
+	if len(do.Attributes) < 3 {
 		err = fmt.Errorf("Invalid number attributes: %v", do.Attributes)
 		return
 	}
-	if _, found := do.Attributes[modbusHoldingRegister]; found {
-		readConfig.function = modbusHoldingRegister
-	} else if _, found := do.Attributes[modbusInputRegister]; found {
-		readConfig.function = modbusInputRegister
-	} else if _, found := do.Attributes[modbusCoil]; found {
-		readConfig.function = modbusCoil
-	} else {
+	readConfig.function = do.Attributes["PrimaryTable"].(string)
+	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" {
 		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
 		return
 	}
-
 	//	Get address
-	strAddress, ok := do.Attributes[readConfig.function].(string)
+	strAddress, ok := do.Attributes["StartingAddress"].(string)
 	if ok == false {
 		err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
 		return
@@ -283,27 +288,218 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 	}
 	readConfig.address = uint16(add)
 
-	// Get number of registers
-	var numRegs int
-	numRegs, err = strconv.Atoi(do.Properties.Value.Size)
-	if err != nil {
-		err = fmt.Errorf("Invalid number of registers: %v", err)
+	// Get number of registers and value Type
+	vType := do.Attributes["ValueType"].(string)
+	if vType == "UINT8" || vType == "INT8" || vType == "UINT16" || vType == "INT16" || vType == "FLOAT16" || vType == "BOOL" {
+		readConfig.size = 1
+		readConfig.vType = vType
+	} else if vType == "UINT32" || vType == "INT32" || vType == "FLOAT32" {
+		readConfig.size = 2
+		readConfig.vType = vType
+	} else if vType == "UINT64" || vType == "INT64" || vType == "FLOAT64" {
+		readConfig.size = 4
+		readConfig.vType = vType
+	} else if vType == "STRING" || vType == "ARRAY" {
+		readConfig.vType = vType
+		nRegs, ok := do.Attributes["Length"].(string)
+		if ok == false {
+			err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
+			return
+		}
+		var reg int
+		reg, err = strconv.Atoi(nRegs)
+		if err != nil {
+			err = fmt.Errorf("Invalid Length value: %v", err)
+			return
+		}
+		readConfig.size = uint16(reg)
+	} else {
+		err = fmt.Errorf("Invalid ValueType: %v", err)
 		return
 	}
-	readConfig.quantity = uint16(numRegs)
 
+	// Get Swap
+	isByteSwap := do.Attributes["IsByteSwap"].(string)
+	if isByteSwap == "true" || isByteSwap == "True" || isByteSwap == "TRUE" {
+		readConfig.isByteSwap = true
+	} else {
+		readConfig.isByteSwap = false
+	}
+	isWordSwap := do.Attributes["IsWordSwap"].(string)
+	if isWordSwap == "true" || isWordSwap == "True" || isWordSwap == "TRUE" {
+		readConfig.isByteSwap = true
+	} else {
+		readConfig.isByteSwap = false
+	}
+
+	if do.Properties.Value.Type == "Bool" || do.Properties.Value.Type == "String" || do.Properties.Value.Type == "Integer" ||
+		do.Properties.Value.Type == "Float" || do.Properties.Value.Type == "Json" {
+		readConfig.resultType = do.Properties.Value.Type
+	} else {
+		err = fmt.Errorf("Invalid resultType: %v", do.Properties.Value.Type)
+		return
+	}
 	return
 }
 
 func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, error) {
 	if readConfig.function == modbusHoldingRegister {
-		return client.ReadHoldingRegisters(readConfig.address, readConfig.quantity)
+		return client.ReadHoldingRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusInputRegister {
-		return client.ReadInputRegisters(readConfig.address, readConfig.quantity)
+		return client.ReadInputRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusCoil {
-		return client.ReadCoils(readConfig.address, readConfig.quantity)
+		return client.ReadCoils(readConfig.address, readConfig.size)
 	}
 
 	err := fmt.Errorf("Invalid read function: %s", readConfig.function)
 	return nil, err
+}
+
+func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequest) (ds_models.CommandValue, error) {
+	var valueInt int64
+	var valueFloat float64
+	var valueBool bool
+	var valueString string
+	difType := "difType"
+	var result = &ds_models.CommandValue{}
+
+	switch readConf.vType {
+	case "UINT16":
+		valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "UINT32":
+		valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "UINT64":
+		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "INT16":
+		valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "INT32":
+		valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "INT64":
+		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		difType = "Int"
+	case "FLOAT32":
+		valueFloat = float64(math.Float32frombits(binary.BigEndian.Uint32(dat)))
+		difType = "Float"
+	case "FLOAT64":
+		valueFloat = math.Float64frombits(binary.BigEndian.Uint64(dat))
+		difType = "Float"
+	case "BOOL":
+		difType = "Bool"
+		for i := 0; i < len(dat); i++ {
+			if dat[i] == 0 {
+				valueBool = false
+			} else {
+				valueBool = true
+				break
+			}
+		}
+	case "STRING":
+		var buffer bytes.Buffer
+		for i := 0; i < len(dat); i++ {
+			if dat[i] >= 0x20 && dat[i] <= 0x7F {
+				valueSt := string(dat[i])
+				buffer.WriteString(valueSt)
+			}
+		}
+		valueString = buffer.String()
+		difType = "String"
+	case "ARRAY":
+		valueString = hex.EncodeToString(dat)
+		difType = "String"
+	default:
+		err := fmt.Errorf("return result fail, none supported value type: %v", readConf.vType)
+		return *result, err
+	}
+
+	var err error
+	now := time.Now().UnixNano() / int64(time.Millisecond)
+	if readConf.resultType == "Bool" {
+		if difType == "Bool" {
+			result, err = ds_models.NewBoolValue(&creq.RO, now, valueBool)
+		} else if difType == "String" {
+			result = ds_models.NewStringValue(&creq.RO, now, valueString)
+		}
+	} else if readConf.resultType == "String" {
+		result = ds_models.NewStringValue(&creq.RO, now, valueString)
+	} else if readConf.resultType == "Integer" {
+		if difType == "Float" {
+			result, err = ds_models.NewInt64Value(&creq.RO, now, int64(valueFloat))
+		} else if difType == "Int" {
+			result, err = ds_models.NewInt64Value(&creq.RO, now, valueInt)
+		}
+	} else if readConf.resultType == "Float" {
+		if difType == "Float" {
+			result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
+		} else if difType == "Int" {
+			result, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
+		}
+	}
+
+	return *result, err
+}
+
+func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte {
+
+	if !isByteSwap && !isWordSwap {
+		return dataBytes
+	}
+
+	if len(dataBytes) == 2 {
+		var newDataBytes = make([]byte, len(dataBytes))
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+		}
+		return newDataBytes
+	}
+	if len(dataBytes) == 4 {
+		var newDataBytes = make([]byte, len(dataBytes))
+
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+			newDataBytes[2] = dataBytes[3]
+			newDataBytes[3] = dataBytes[2]
+		}
+		if isWordSwap {
+			newDataBytes[0] = dataBytes[2]
+			newDataBytes[1] = dataBytes[3]
+			newDataBytes[2] = dataBytes[0]
+			newDataBytes[3] = dataBytes[1]
+		}
+		return newDataBytes
+	}
+	if len(dataBytes) == 8 {
+		var newDataBytes = make([]byte, len(dataBytes))
+
+		if isByteSwap {
+			newDataBytes[0] = dataBytes[1]
+			newDataBytes[1] = dataBytes[0]
+			newDataBytes[2] = dataBytes[3]
+			newDataBytes[3] = dataBytes[2]
+			newDataBytes[4] = dataBytes[5]
+			newDataBytes[5] = dataBytes[4]
+			newDataBytes[6] = dataBytes[7]
+			newDataBytes[7] = dataBytes[6]
+
+		}
+		if isWordSwap {
+			newDataBytes[0] = dataBytes[6]
+			newDataBytes[1] = dataBytes[7]
+			newDataBytes[2] = dataBytes[4]
+			newDataBytes[3] = dataBytes[5]
+			newDataBytes[4] = dataBytes[2]
+			newDataBytes[5] = dataBytes[3]
+			newDataBytes[6] = dataBytes[0]
+			newDataBytes[7] = dataBytes[1]
+		}
+		return newDataBytes
+	}
+
+	return dataBytes
 }

@@ -377,3 +377,4 @@ func MapCommandValue(value *ds_models.CommandValue) (*ds_models.CommandValue, bo
 	}
 	return result, ok
 }
+
