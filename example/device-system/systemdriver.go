@@ -38,6 +38,9 @@ type Stats struct {
 	uptime  int64
 }
 
+const gpioStatusO1 = "/sys/class/gpio/gpio9/value"
+const gpioStatusO2 = "/sys/class/gpio/gpio136/value"
+
 var statsValues Stats
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -70,7 +73,7 @@ func (sys *SystemDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_
 		}
 
 		now := time.Now().UnixNano() / int64(time.Millisecond)
-		if reqs[i].DeviceObject.Name == "STATUS_O1" || reqs[i].DeviceObject.Name == "STATUS_O2" {
+		if reqs[i].DeviceObject.Name == "StatusO1" || reqs[i].DeviceObject.Name == "StatusO2" {
 			status := false
 			if value == 1 {
 				status = true
@@ -92,8 +95,44 @@ func (sys *SystemDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_
 func (sys *SystemDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 
-	err := fmt.Errorf("SystemDriver.HandleWriteCommands not implemented")
-	return err
+	if len(reqs) != 1 {
+		err := fmt.Errorf("SystemDriver.HandleWriteCommands; too many command requests; only one supported")
+		return err
+	}
+	if len(params) != 1 {
+		err := fmt.Errorf("SystemDriver.HandleWriteCommands; the number of parameter is not correct; only one supported")
+		return err
+	}
+
+	if reqs[0].DeviceObject.Name == "StatusO1" {
+		if params[0].NumericValue[0] == 0 {
+			ioutil.WriteFile(gpioStatusO1, []byte("0"), 0644)
+		} else {
+			ioutil.WriteFile(gpioStatusO1, []byte("1"), 0644)
+		}
+	}
+
+	if reqs[0].DeviceObject.Name == "StatusO2" {
+		if params[0].NumericValue[0] == 0 {
+			ioutil.WriteFile(gpioStatusO2, []byte("0"), 0644)
+		} else {
+			ioutil.WriteFile(gpioStatusO2, []byte("1"), 0644)
+		}
+	}
+
+	if reqs[0].DeviceObject.Name == "Reboot" {
+		if params[0].NumericValue[0] != 0 {
+			_, err := exec.Command("reboot").Output()
+			if err != nil {
+				err = fmt.Errorf("Error executing reboot: %v", err)
+				return err
+
+			}
+		}
+	}
+
+	sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleWriteCommands: device: %s, operation: %v, parameters: %v", addr.Name, reqs[0].RO.Operation, params))
+	return nil
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or
@@ -106,7 +145,7 @@ func (sys *SystemDriver) Stop(force bool) error {
 }
 
 func getValue(request string) (value uint64, err error) {
-	if request == "RAM_USAGE" {
+	if request == "RamUsage" {
 		info := syscall.Sysinfo_t{}
 		err = syscall.Sysinfo(&info)
 		if err != nil {
@@ -117,7 +156,7 @@ func getValue(request string) (value uint64, err error) {
 		totalRAM := uint64(info.Totalram)
 		freeRAM := uint64(info.Freeram)
 		value = ((totalRAM - freeRAM) * 100) / totalRAM
-	} else if request == "DISK_USAGE" {
+	} else if request == "DiskUsage" {
 		var stat syscall.Statfs_t
 		err = syscall.Statfs("/", &stat)
 		if err != nil {
@@ -128,32 +167,25 @@ func getValue(request string) (value uint64, err error) {
 		total := uint64(stat.Blocks) * uint64(stat.Bsize)
 		used := total - free
 		value = (used * 100) / total
-	} else if request == "UPTIME" {
+	} else if request == "Uptime" {
 		value = uint64(getUptime())
-	} else if request == "STATUS_O1" {
-		inputStr, _ := readFile("/sys/class/gpio/gpio9/value")
+	} else if request == "StatusO1" {
+		inputStr, _ := readFile(gpioStatusO1)
 		if len(inputStr) != 0 {
 			input, _ := strconv.Atoi(inputStr[0:1])
 			value = uint64(input)
 		}
-	} else if request == "STATUS_O2" {
-		inputStr, _ := readFile("/sys/class/gpio/gpio136/value")
+	} else if request == "StatusO2" {
+		inputStr, _ := readFile(gpioStatusO2)
 		if len(inputStr) != 0 {
 			input, _ := strconv.Atoi(inputStr[0:1])
 			value = uint64(input)
 		}
-	} else if request == "REBOOT" {
-		_, err = exec.Command("reboot").Output()
-		if err != nil {
-			err = fmt.Errorf("Error executing reboot: %v", err)
-			return
-		}
-		value = 1
-	} else if request == "ETH_RX" {
+	} else if request == "EthRx" {
 		value = statsValues.usageRx
-	} else if request == "ETH_TX" {
+	} else if request == "EthTx" {
 		value = statsValues.usageTx
-	} else if request == "CPU_USAGE" {
+	} else if request == "CpuUsage" {
 		value = statsValues.cpuUsage
 	}
 	return
