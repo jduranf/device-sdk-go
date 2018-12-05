@@ -61,24 +61,18 @@ deviceResources:
         properties:
             value:
                 { type: "Bool", readWrite: "RW" }
-            units:
-                { type: "String", readWrite: "RW" }
     -
         name: "StatusO2"
         description: "Output 2 status"
         properties:
             value:
                 { type: "Bool", readWrite: "RW" }
-            units:
-                { type: "String", readWrite: "RW"}
     -
         name: "Reboot"
         description: "Reboot Device"
         properties:
             value:
                 { type: "Bool", readWrite: "W" }
-            units:
-                { type: "String", readWrite: "R" }
 
 resources:
     -

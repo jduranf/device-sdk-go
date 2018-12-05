@@ -38,6 +38,9 @@ type Stats struct {
 	uptime  int64
 }
 
+const gpioStatusO1 = "/sys/class/gpio/gpio9/value"
+const gpioStatusO2 = "/sys/class/gpio/gpio136/value"
+
 var statsValues Stats
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -103,17 +106,17 @@ func (sys *SystemDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds
 
 	if reqs[0].DeviceObject.Name == "StatusO1" {
 		if params[0].NumericValue[0] == 0 {
-			ioutil.WriteFile("/sys/class/gpio/gpio9/value", []byte("0"), 0644)
+			ioutil.WriteFile(gpioStatusO1, []byte("0"), 0644)
 		} else {
-			ioutil.WriteFile("/sys/class/gpio/gpio9/value", []byte("1"), 0644)
+			ioutil.WriteFile(gpioStatusO1, []byte("1"), 0644)
 		}
 	}
 
 	if reqs[0].DeviceObject.Name == "StatusO2" {
 		if params[0].NumericValue[0] == 0 {
-			ioutil.WriteFile("/sys/class/gpio/gpio136/value", []byte("0"), 0644)
+			ioutil.WriteFile(gpioStatusO2, []byte("0"), 0644)
 		} else {
-			ioutil.WriteFile("/sys/class/gpio/gpio136/value", []byte("1"), 0644)
+			ioutil.WriteFile(gpioStatusO2, []byte("1"), 0644)
 		}
 	}
 
@@ -167,13 +170,13 @@ func getValue(request string) (value uint64, err error) {
 	} else if request == "Uptime" {
 		value = uint64(getUptime())
 	} else if request == "StatusO1" {
-		inputStr, _ := readFile("/sys/class/gpio/gpio9/value")
+		inputStr, _ := readFile(gpioStatusO1)
 		if len(inputStr) != 0 {
 			input, _ := strconv.Atoi(inputStr[0:1])
 			value = uint64(input)
 		}
 	} else if request == "StatusO2" {
-		inputStr, _ := readFile("/sys/class/gpio/gpio136/value")
+		inputStr, _ := readFile(gpioStatusO2)
 		if len(inputStr) != 0 {
 			input, _ := strconv.Atoi(inputStr[0:1])
 			value = uint64(input)
