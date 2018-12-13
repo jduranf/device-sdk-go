@@ -17,6 +17,7 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/goburrow/serial"
 )
 
 type ModbusDriver struct {
@@ -66,7 +67,8 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 		var data []byte
 		data, err = readModbus(modbusDevice.client, readConfig)
 		if err != nil {
-			if err.Error() == "serial:timeout" { //TODO:Add error cases
+			//TODO:Add error cases
+			if err == serial.ErrTimeout || err.Error() == "server device failure" || err.Error() == "acknowledge" || err.Error() == "unknown" {
 				if dev.OperatingState == models.Enabled {
 					dev.OperatingState = models.Disabled
 					cache.Devices().Update(*dev)
@@ -81,7 +83,7 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 				dev.OperatingState = models.Enabled
 				cache.Devices().Update(*dev)
 				go common.DeviceClient.UpdateOpStateByName(dev.Name, models.Enabled)
-				m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Enabled))
+				m.lc.Info(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Enabled))
 			}
 
 		}
