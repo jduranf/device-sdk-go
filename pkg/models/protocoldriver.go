@@ -40,7 +40,7 @@ type ProtocolDriver interface {
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
-	HandleReadCommands(addr *models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
+	HandleReadCommands(dev *models.Device, addr *models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
 
 	// HandleWriteCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).

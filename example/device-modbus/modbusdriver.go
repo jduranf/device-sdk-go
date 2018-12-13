@@ -12,6 +12,8 @@ package modbus
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -38,7 +40,7 @@ func (m *ModbusDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (m *ModbusDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	var modbusDevice *ModbusDevice
 	modbusDevice, err = getClient(addr)
@@ -64,8 +66,24 @@ func (m *ModbusDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 		var data []byte
 		data, err = readModbus(modbusDevice.client, readConfig)
 		if err != nil {
+			if err.Error() == "serial:timeout" { //TODO:Add error cases
+				if dev.OperatingState == models.Enabled {
+					dev.OperatingState = models.Disabled
+					cache.Devices().Update(*dev)
+					go common.DeviceClient.UpdateOpStateByName(dev.Name, models.Disabled)
+					m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Disabled))
+				}
+			}
 			m.lc.Warn(fmt.Sprintf("Error reading Modbus data: %v", err))
 			return
+		} else {
+			if dev.OperatingState == models.Disabled {
+				dev.OperatingState = models.Enabled
+				cache.Devices().Update(*dev)
+				go common.DeviceClient.UpdateOpStateByName(dev.Name, models.Enabled)
+				m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Enabled))
+			}
+
 		}
 
 		var result = &ds_models.CommandValue{}

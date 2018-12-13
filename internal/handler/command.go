@@ -115,7 +115,7 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		reqs[i].DeviceObject = devObj
 	}
 
-	results, err := common.Driver.HandleReadCommands(&device.Addressable, reqs)
+	results, err := common.Driver.HandleReadCommands(device, &device.Addressable, reqs)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execReadCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return nil, common.NewServerError(msg, err)
