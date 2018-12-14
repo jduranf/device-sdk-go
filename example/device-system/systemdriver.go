@@ -59,7 +59,7 @@ func (sys *SystemDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (sys *SystemDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	res = make([]*ds_models.CommandValue, len(reqs))
 	for i := range reqs {
@@ -122,12 +122,7 @@ func (sys *SystemDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds
 
 	if reqs[0].DeviceObject.Name == "Reboot" {
 		if params[0].NumericValue[0] != 0 {
-			_, err := exec.Command("reboot").Output()
-			if err != nil {
-				err = fmt.Errorf("Error executing reboot: %v", err)
-				return err
-
-			}
+			go waitToReboot(sys)
 		}
 	}
 
@@ -287,4 +282,13 @@ func readFile(file string) (dat string, e error) {
 	d, e := ioutil.ReadFile(file)
 	dat = string(d[:])
 	return dat, e
+}
+
+func waitToReboot(sys *SystemDriver) {
+	sys.lc.Info(fmt.Sprintf("Executing Reboot System"))
+	time.Sleep(3 * time.Second)
+	_, err := exec.Command("reboot").Output()
+	if err != nil {
+		sys.lc.Info(fmt.Sprintf("Error Executing Reboot System"))
+	}
 }
