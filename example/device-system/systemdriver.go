@@ -122,7 +122,7 @@ func (sys *SystemDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds
 
 	if reqs[0].DeviceObject.Name == "Reboot" {
 		if params[0].NumericValue[0] != 0 {
-			go waitToReboot()
+			go waitToReboot(sys)
 		}
 	}
 
@@ -284,11 +284,11 @@ func readFile(file string) (dat string, e error) {
 	return dat, e
 }
 
-func waitToReboot() (err error) {
+func waitToReboot(sys *SystemDriver) {
+	sys.lc.Info(fmt.Sprintf("Executing Reboot System"))
 	time.Sleep(3 * time.Second)
-	_, err = exec.Command("reboot").Output()
+	_, err := exec.Command("reboot").Output()
 	if err != nil {
-		err = fmt.Errorf("Error executing reboot: %v", err)
+		sys.lc.Info(fmt.Sprintf("Error Executing Reboot System"))
 	}
-	return err
 }
