@@ -75,10 +75,9 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 				return
 			}
 		} else {
-
 			tmp, err = getTemp()
 			if err != nil {
-				sys.lc.Warn(fmt.Sprintf("Error getting system data: %v", err))
+				sys.lc.Warn(fmt.Sprintf("Error getting cpu temperature: %v", err))
 				return
 			}
 		}
@@ -203,16 +202,18 @@ func getValue(request string) (value uint64, err error) {
 	return
 }
 
-func getTemp() (value int32, err error) {
-	inputStr, _ := readFile(cpuTemp)
+func getTemp() (int32, error) {
+	var value int32
+	inputStr, err := readFile(cpuTemp)
+	if err != nil {
+		return value, err
+	}
 	if len(inputStr) != 0 {
-		input, err := strconv.Atoi(inputStr[0 : len(inputStr)-1])
-		if err != nil {
-			fmt.Println(value)
-		}
+		var input int
+		input, err = strconv.Atoi(inputStr[0 : len(inputStr)-1])
 		value = int32(input)
 	}
-	return
+	return value, err
 }
 
 func stringBetween(value string, a string, b string) string {
