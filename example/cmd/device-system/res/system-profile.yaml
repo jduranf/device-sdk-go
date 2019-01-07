@@ -24,6 +24,14 @@ deviceResources:
             units:
                 { type: "String", readWrite: "R", defaultValue: "percent" }
     -
+        name: "CpuTemp"
+        description: "CPU Temp in Cº"
+        properties:
+            value:
+                { type: "Integer", readWrite: "R" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "Cº" }
+    -
         name: "DiskUsage"
         description: "Used disk in %"
         properties:
@@ -84,6 +92,10 @@ resources:
         get:
           - { index: "1", operation: "get", object: "CpuUsage", parameter: "CpuUsage" }
     -
+        name: "CpuTemp"
+        get:
+          - { index: "1", operation: "get", object: "CpuTemp", parameter: "CpuTemp" }
+    -
         name: "DiskUsage"
         get:
           - { index: "1", operation: "get", object: "DiskUsage", parameter: "DiskUsage" }
@@ -120,12 +132,13 @@ resources:
         get:
           - { index: "1", operation: "get", object: "RamUsage", parameter: "RamUsage" }
           - { index: "2", operation: "get", object: "CpuUsage", parameter: "CpuUsage" }
-          - { index: "3", operation: "get", object: "DiskUsage", parameter: "DiskUsage" }
-          - { index: "4", operation: "get", object: "Uptime", parameter: "Uptime" }
-          - { index: "5", operation: "get", object: "EthTx", parameter: "EthTx" }
-          - { index: "6", operation: "get", object: "EthRx", parameter: "EthRx" }
-          - { index: "7", operation: "get", object: "StatusO1", parameter: "StatusO1" }
-          - { index: "8", operation: "get", object: "StatusO2", parameter: "StatusO2" }
+          - { index: "3", operation: "get", object: "CpuTemp", parameter: "CpuTemp" }
+          - { index: "4", operation: "get", object: "DiskUsage", parameter: "DiskUsage" }
+          - { index: "5", operation: "get", object: "Uptime", parameter: "Uptime" }
+          - { index: "6", operation: "get", object: "EthTx", parameter: "EthTx" }
+          - { index: "7", operation: "get", object: "EthRx", parameter: "EthRx" }
+          - { index: "8", operation: "get", object: "StatusO1", parameter: "StatusO1" }
+          - { index: "9", operation: "get", object: "StatusO2", parameter: "StatusO2" }
 
 commands:
     -
@@ -150,6 +163,19 @@ commands:
                 code:           "200"
                 description:    "Get CPU Usage in %"
                 expectedValues: ["CpuUsage"]
+            -
+                code:           "503"
+                description:    "service unavailable"
+                expectedValues: []
+    -
+        name: "CpuTemp"
+        get:
+            path: "/api/v1/device/{deviceId}/CpuTemp"
+            responses:
+            -
+                code:           "200"
+                description:    "Get CPU Temp in Cº"
+                expectedValues: ["CpuTemp"]
             -
                 code:           "503"
                 description:    "service unavailable"
