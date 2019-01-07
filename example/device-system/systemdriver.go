@@ -40,6 +40,7 @@ type Stats struct {
 
 const gpioStatusO1 = "/sys/class/gpio/gpio9/value"
 const gpioStatusO2 = "/sys/class/gpio/gpio136/value"
+const cpuTemp = "/sys/class/thermal/thermal_zone0/temp"
 
 var statsValues Stats
 
@@ -66,10 +67,20 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 		sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleReadCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[i].RO.Operation, reqs[i].DeviceObject.Attributes))
 
 		var value uint64
-		value, err = getValue(reqs[i].DeviceObject.Name)
-		if err != nil {
-			sys.lc.Warn(fmt.Sprintf("Error getting system data: %v", err))
-			return
+		var tmp int32
+		if reqs[i].DeviceObject.Name != "CpuTemp" {
+			value, err = getValue(reqs[i].DeviceObject.Name)
+			if err != nil {
+				sys.lc.Warn(fmt.Sprintf("Error getting system data: %v", err))
+				return
+			}
+		} else {
+
+			tmp, err = getTemp()
+			if err != nil {
+				sys.lc.Warn(fmt.Sprintf("Error getting system data: %v", err))
+				return
+			}
 		}
 
 		now := time.Now().UnixNano() / int64(time.Millisecond)
@@ -81,8 +92,14 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 			cv, _ := ds_models.NewBoolValue(&reqs[i].RO, now, status)
 			res[i] = cv
 		} else {
-			cv, _ := ds_models.NewUint64Value(&reqs[i].RO, now, value)
-			res[i] = cv
+			if reqs[i].DeviceObject.Name == "CpuTemp" {
+				cv, _ := ds_models.NewInt32Value(&reqs[i].RO, now, tmp)
+				res[i] = cv
+			} else {
+				cv, _ := ds_models.NewUint64Value(&reqs[i].RO, now, value)
+				res[i] = cv
+			}
+
 		}
 	}
 	return
@@ -182,6 +199,18 @@ func getValue(request string) (value uint64, err error) {
 		value = statsValues.usageTx
 	} else if request == "CpuUsage" {
 		value = statsValues.cpuUsage
+	}
+	return
+}
+
+func getTemp() (value int32, err error) {
+	inputStr, _ := readFile(cpuTemp)
+	if len(inputStr) != 0 {
+		input, err := strconv.Atoi(inputStr[0 : len(inputStr)-1])
+		if err != nil {
+			fmt.Println(value)
+		}
+		value = int32(input)
 	}
 	return
 }
