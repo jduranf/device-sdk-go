@@ -211,7 +211,7 @@ func getTemp() (int32, error) {
 	if len(inputStr) != 0 {
 		var input int
 		input, err = strconv.Atoi(inputStr[0 : len(inputStr)-1])
-		value = int32(input)
+		value = int32(input / 1000)
 	}
 	return value, err
 }
