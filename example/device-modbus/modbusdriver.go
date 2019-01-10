@@ -102,10 +102,51 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (m *ModbusDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds_models.CommandRequest,
+func (m *ModbusDriver) HandleWriteCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
+	var err error
+	var modbusDevice *ModbusDevice
+	modbusDevice, err = getClient(addr)
+	if err != nil {
+		m.lc.Warn(fmt.Sprintf("Error connecting with Modbus: %v", err))
+		return err
+	}
+	defer releaseClient(modbusDevice)
 
-	err := fmt.Errorf("ModbusDriver.HandleWriteCommands not implemented")
+	for i := range reqs {
+		m.lc.Debug(fmt.Sprintf("ModbusDriver.HandleWriteCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[i].RO.Operation, reqs[i].DeviceObject.Attributes))
+
+		// TODO: Write multiple registers at the same time if they have contiguous addresses
+
+		var readConfig modbusReadConfig
+		readConfig, err = getReadValues(&reqs[i].DeviceObject)
+		if err != nil {
+			m.lc.Warn(fmt.Sprintf("Error parsing Modbus data: %v", err))
+			return err
+		}
+		var value []byte
+		value = setWriteValue(*params[i], readConfig)
+		_, err = writeModbus(modbusDevice.client, readConfig, value)
+		if err != nil {
+			if strings.Contains(err.Error(), "timeout") {
+				if dev.OperatingState == models.Enabled {
+					dev.OperatingState = models.Disabled
+					cache.Devices().Update(*dev)
+					go common.DeviceClient.UpdateOpStateByName(dev.Name, models.Disabled)
+					m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Disabled))
+				}
+			}
+			m.lc.Warn(fmt.Sprintf("Error writing Modbus data: %v", err))
+			return err
+		} else {
+			if dev.OperatingState == models.Disabled {
+				dev.OperatingState = models.Enabled
+				cache.Devices().Update(*dev)
+				go common.DeviceClient.UpdateOpStateByName(dev.Name, models.Enabled)
+				m.lc.Info(fmt.Sprintf("Updated OperatingState of device: %s to %s", dev.Name, models.Enabled))
+			}
+		}
+	}
 	return err
 }
 

@@ -355,6 +355,17 @@ func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, erro
 	return nil, err
 }
 
+func writeModbus(client modbus.Client, readConfig modbusReadConfig, value []byte) ([]byte, error) {
+	if readConfig.function == modbusHoldingRegister || readConfig.function == modbusInputRegister {
+		return client.WriteMultipleRegisters(readConfig.address, readConfig.size, value)
+	} else if readConfig.function == modbusCoil {
+		return client.WriteSingleCoil(readConfig.address, binary.LittleEndian.Uint16(value))
+	}
+
+	err := fmt.Errorf("Invalid write function: %s", readConfig.function)
+	return nil, err
+}
+
 func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequest) (ds_models.CommandValue, error) {
 	var valueInt int64
 	var valueFloat float64
@@ -443,6 +454,103 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 	return *result, err
 }
 
+func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []byte {
+	var data []byte
+	var isByteSwap bool
+	var isWordSwap bool
+	var i uint16
+
+	if writeConf.resultType == "String" {
+		myString, _ := param.StringValue()
+
+		if writeConf.vType == "STRING" {
+			if len(myString) == int(writeConf.size) {
+				for i = 0; i < writeConf.size; i++ {
+					data = append(data, byte(0))
+					data = append(data, byte(myString[i]))
+				}
+			} else if len(myString) == int(writeConf.size*2) {
+				data = []byte(myString)
+			} else {
+				data = []byte(myString)
+			}
+		}
+		if writeConf.vType == "ARRAY" {
+			if len(myString) == int(writeConf.size*2) {
+				datastring, _ := hex.DecodeString(myString)
+				for i = 0; i < writeConf.size; i++ {
+					data = append(data, byte(0))
+					data = append(data, datastring[i])
+				}
+			} else if len(myString) == int(writeConf.size*4) {
+				data, _ = hex.DecodeString(myString)
+			} else {
+				data, _ = hex.DecodeString(myString)
+			}
+		}
+	} else if writeConf.resultType == "Bool" {
+		data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+	} else if writeConf.resultType == "Json" {
+		//TODO:JSon case
+	} else if writeConf.resultType == "Integer" {
+		switch writeConf.vType {
+		case "UINT8":
+			data = param.NumericValue[7:]
+		case "INT8":
+			data = param.NumericValue[7:]
+		case "UINT16":
+			data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+		case "INT16":
+			data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+		case "UINT32":
+			data = swapBitDataBytes(param.NumericValue[4:], isByteSwap, isWordSwap)
+		case "INT32":
+			data = swapBitDataBytes(param.NumericValue[4:], isByteSwap, isWordSwap)
+		case "UINT64":
+			data = swapBitDataBytes(param.NumericValue, isByteSwap, isWordSwap)
+		case "INT64":
+			data = swapBitDataBytes(param.NumericValue, isByteSwap, isWordSwap)
+
+		case "FLOAT32":
+			data = swapBitDataBytes(param.NumericValue[4:], isByteSwap, isWordSwap)
+		case "FLOAT64":
+			data = swapBitDataBytes(param.NumericValue, isByteSwap, isWordSwap)
+		}
+
+	} else if writeConf.resultType == "Float" {
+		if writeConf.vType == "FLOAT64" {
+			dat := math.Float64frombits(binary.BigEndian.Uint64(param.NumericValue))
+			binary.BigEndian.PutUint64(param.NumericValue, math.Float64bits(dat))
+		} else if writeConf.vType == "FLOAT32" {
+			dat := math.Float32frombits(binary.BigEndian.Uint32(param.NumericValue))
+			binary.BigEndian.PutUint32(param.NumericValue, math.Float32bits(dat))
+		} else {
+			dat := math.Float64frombits(binary.BigEndian.Uint64(param.NumericValue))
+			binary.BigEndian.PutUint64(param.NumericValue, uint64(dat))
+			switch writeConf.vType {
+			case "UINT8":
+				data = param.NumericValue[7:]
+			case "INT8":
+				data = param.NumericValue[7:]
+			case "UINT16":
+				data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+			case "INT16":
+				data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+			case "UINT32":
+				data = swapBitDataBytes(param.NumericValue[4:], isByteSwap, isWordSwap)
+			case "INT32":
+				data = swapBitDataBytes(param.NumericValue[4:], isByteSwap, isWordSwap)
+			case "UINT64":
+				data = swapBitDataBytes(param.NumericValue, isByteSwap, isWordSwap)
+			case "INT64":
+				data = swapBitDataBytes(param.NumericValue, isByteSwap, isWordSwap)
+			}
+		}
+	}
+
+	return data
+}
+
 func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte {
 
 	if !isByteSwap && !isWordSwap {
@@ -502,4 +610,9 @@ func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte
 	}
 
 	return dataBytes
+}
+func float64ToByte(f float64) []byte {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], math.Float64bits(f))
+	return buf[:]
 }

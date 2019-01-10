@@ -46,7 +46,7 @@ type ProtocolDriver interface {
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
 	// Since the commands are actuation commands, params provide parameters for the individual
 	// command.
-	HandleWriteCommands(addr *models.Addressable, reqs []CommandRequest, params []*CommandValue) error
+	HandleWriteCommands(dev *models.Device, addr *models.Addressable, reqs []CommandRequest, params []*CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

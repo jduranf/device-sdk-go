@@ -242,7 +242,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 		}
 	}
 
-	err = common.Driver.HandleWriteCommands(&device.Addressable, reqs, cvs)
+	err = common.Driver.HandleWriteCommands(device, &device.Addressable, reqs, cvs)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return common.NewServerError(msg, err)
@@ -342,10 +342,16 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_mod
 	case "int64":
 		value, err = strconv.ParseInt(v, 10, 64)
 		t = ds_models.Int64
+	case "integer":
+		value, err = strconv.ParseInt(v, 10, 64)
+		t = ds_models.Int64
 	case "float32":
 		value, err = strconv.ParseFloat(v, 32)
 		t = ds_models.Float32
 	case "float64":
+		value, err = strconv.ParseFloat(v, 64)
+		t = ds_models.Float64
+	case "float":
 		value, err = strconv.ParseFloat(v, 64)
 		t = ds_models.Float64
 	}
