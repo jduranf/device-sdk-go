@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/goburrow/modbus"
@@ -469,8 +471,6 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 					data = append(data, byte(0))
 					data = append(data, byte(myString[i]))
 				}
-			} else if len(myString) == int(writeConf.size*2) {
-				data = []byte(myString)
 			} else {
 				data = []byte(myString)
 			}
@@ -482,8 +482,6 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 					data = append(data, byte(0))
 					data = append(data, datastring[i])
 				}
-			} else if len(myString) == int(writeConf.size*4) {
-				data, _ = hex.DecodeString(myString)
 			} else {
 				data, _ = hex.DecodeString(myString)
 			}
@@ -520,10 +518,10 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 	} else if writeConf.resultType == "Float" {
 		if writeConf.vType == "FLOAT64" {
 			dat := math.Float64frombits(binary.BigEndian.Uint64(param.NumericValue))
-			binary.BigEndian.PutUint64(param.NumericValue, math.Float64bits(dat))
+			binary.BigEndian.PutUint64(data, math.Float64bits(dat))
 		} else if writeConf.vType == "FLOAT32" {
 			dat := math.Float32frombits(binary.BigEndian.Uint32(param.NumericValue))
-			binary.BigEndian.PutUint32(param.NumericValue, math.Float32bits(dat))
+			binary.BigEndian.PutUint32(data, math.Float32bits(dat))
 		} else {
 			dat := math.Float64frombits(binary.BigEndian.Uint64(param.NumericValue))
 			binary.BigEndian.PutUint64(param.NumericValue, uint64(dat))
@@ -610,4 +608,24 @@ func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte
 	}
 
 	return dataBytes
+}
+
+func updateOperatingState(m *ModbusDriver, e error, device *models.Device) {
+	if e != nil {
+		if strings.Contains(e.Error(), "timeout") {
+			if device.OperatingState == models.Enabled {
+				device.OperatingState = models.Disabled
+				cache.Devices().Update(*device)
+				go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled)
+				m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", device.Name, models.Disabled))
+			}
+		}
+	} else {
+		if device.OperatingState == models.Disabled {
+			device.OperatingState = models.Enabled
+			cache.Devices().Update(*device)
+			go common.DeviceClient.UpdateOpStateByName(device.Name, models.Enabled)
+			m.lc.Info(fmt.Sprintf("Updated OperatingState of device: %s to %s", device.Name, models.Enabled))
+		}
+	}
 }
