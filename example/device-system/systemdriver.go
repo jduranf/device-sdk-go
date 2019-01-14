@@ -108,7 +108,7 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (sys *SystemDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds_models.CommandRequest,
+func (sys *SystemDriver) HandleWriteCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 
 	if len(reqs) != 1 {
