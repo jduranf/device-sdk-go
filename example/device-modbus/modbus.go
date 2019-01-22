@@ -15,6 +15,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"strconv"
 	"strings"
@@ -611,6 +612,7 @@ func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte
 }
 
 func updateOperatingState(m *ModbusDriver, e error, device *models.Device) {
+	var devEn int
 	if e != nil {
 		if strings.Contains(e.Error(), "timeout") {
 			if device.OperatingState == models.Enabled {
@@ -628,4 +630,17 @@ func updateOperatingState(m *ModbusDriver, e error, device *models.Device) {
 			m.lc.Info(fmt.Sprintf("Updated OperatingState of device: %s to %s", device.Name, models.Enabled))
 		}
 	}
+	devEn = 0
+	allDevices := cache.Devices().All()
+	for i := range allDevices {
+		if allDevices[i].OperatingState == models.Enabled {
+			devEn++
+		}
+	}
+	if devEn == len(allDevices) {
+		ioutil.WriteFile(gpioSlavesRedLed, []byte("0"), 0644)
+	} else {
+		ioutil.WriteFile(gpioSlavesRedLed, []byte("1"), 0644)
+	}
+
 }

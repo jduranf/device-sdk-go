@@ -22,6 +22,8 @@ type ModbusDriver struct {
 	asyncCh chan<- *ds_models.AsyncValues
 }
 
+const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
+
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
 func (m *ModbusDriver) DisconnectDevice(address *models.Addressable) error {
