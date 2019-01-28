@@ -464,7 +464,7 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 	var i uint16
 
 	if writeConf.resultType == "String" {
-		myString, _ := param.StringsValue()
+		myString, _ := param.StringValue()
 
 		if writeConf.vType == "STRING" {
 			if len(myString) == int(writeConf.size) {
