@@ -9,7 +9,6 @@ package models
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -263,15 +262,15 @@ func (cv *CommandValue) ValueToString() (str string) {
 		}
 		str = strconv.FormatInt(res, 10)
 	case Float32:
-		//var res float32
-		//binary.Read(reader, binary.BigEndian, &res)
-		//str = strconv.FormatFloat(float64(res), 'f', -1, 32)
-		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		var res float32
+		binary.Read(reader, binary.BigEndian, &res)
+		str = strconv.FormatFloat(float64(res), 'f', -1, 32)
+		//str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	case Float64:
-		//var res float64
-		//binary.Read(reader, binary.BigEndian, &res)
-		//str = strconv.FormatFloat(res, 'f', -1, 64)
-		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		var res float64
+		binary.Read(reader, binary.BigEndian, &res)
+		str = strconv.FormatFloat(res, 'f', -1, 64)
+		//str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	}
 
 	return
