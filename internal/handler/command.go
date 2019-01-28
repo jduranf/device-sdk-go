@@ -8,8 +8,10 @@
 package handler
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -163,6 +165,10 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
 
+		if cv.Type == ds_models.Float64 {
+			cv.StringValue = strconv.FormatFloat(math.Float64frombits(binary.BigEndian.Uint64(cv.NumericValue)), 'f', -1, 64)
+			cv.Type = ds_models.String
+		}
 		reading := common.CommandValueToReading(cv, device.Name)
 		readings = append(readings, *reading)
 

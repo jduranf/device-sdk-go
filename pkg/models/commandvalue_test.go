@@ -64,7 +64,7 @@ func TestNewStringValue(t *testing.T) {
 	if cv.Type != String {
 		t.Errorf("NewStringValue: invalid Type: %v", cv.Type)
 	}
-	v, err := cv.StringValue()
+	v, err := cv.StringsValue()
 	if err != nil {
 		t.Errorf("NewStringValue: failed to get string value")
 	}
@@ -77,10 +77,10 @@ func TestNewStringValue(t *testing.T) {
 	if cv.Type != String {
 		t.Errorf("NewStringValue: invalid Type: %v #2", cv.Type)
 	}
-	if value != cv.stringValue {
-		t.Errorf("NewStringValue: cv.stringValue: %s doesn't match value: %s", cv.stringValue, value)
+	if value != cv.StringValue {
+		t.Errorf("NewStringValue: cv.stringValue: %s doesn't match value: %s", cv.StringValue, value)
 	}
-	v, err = cv.StringValue()
+	v, err = cv.StringsValue()
 	if err != nil {
 		t.Errorf("NewStringValue: failed to get string value")
 	}

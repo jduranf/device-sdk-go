@@ -80,7 +80,7 @@ type CommandValue struct {
 	// its native type by referring to the the value of ResType.
 	NumericValue []byte
 	// stringValue is a string value returned as a value by a ProtocolDriver instance.
-	stringValue string
+	StringValue string
 }
 
 func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
@@ -90,7 +90,7 @@ func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *C
 }
 
 func NewStringValue(ro *models.ResourceOperation, origin int64, value string) (cv *CommandValue) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: String, stringValue: value}
+	cv = &CommandValue{RO: ro, Origin: origin, Type: String, StringValue: value}
 	return
 }
 
@@ -170,7 +170,7 @@ func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface
 	if t != String {
 		err = encodeValue(cv, value)
 	} else {
-		cv.stringValue = value.(string)
+		cv.StringValue = value.(string)
 	}
 	return
 }
@@ -192,7 +192,7 @@ func decodeValue(reader io.Reader, value interface{}) error {
 //ValueToString returns the string format of the value
 func (cv *CommandValue) ValueToString() (str string) {
 	if cv.Type == String {
-		str = cv.stringValue
+		str = cv.StringValue
 		return
 	}
 
@@ -327,8 +327,8 @@ func (cv *CommandValue) BoolValue() (bool, error) {
 	return value, err
 }
 
-func (cv *CommandValue) StringValue() (string, error) {
-	value := cv.stringValue
+func (cv *CommandValue) StringsValue() (string, error) {
+	value := cv.StringValue
 	if cv.Type != String {
 		return value, fmt.Errorf("the data type is not %T", value)
 	}
