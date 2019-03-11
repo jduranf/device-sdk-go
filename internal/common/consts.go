@@ -2,22 +2,31 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package common
+
+import (
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+)
 
 const (
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
 	ClientLogging  = "Logging"
 
-	APIv1Prefix       = "/api/v1"
-	Colon             = ":"
-	HttpScheme        = "http://"
-	HttpProto         = "HTTP"
-	StatusResponse    = "pong"
-	ServiceStatusPass = "passing"
+	APIv1Prefix    = "/api/v1"
+	Colon          = ":"
+	HttpScheme     = "http://"
+	HttpProto      = "HTTP"
+	StatusResponse = "pong"
+
+	ConfigDirectory    = "./res"
+	ConfigFileName     = "configuration.toml"
+	ConfigRegistryStem = "edgex/devices/1.0/"
+	WritableKey        = "/Writable"
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
@@ -25,4 +34,6 @@ const (
 	APIPingRoute            = APIv1Prefix + "/ping"
 
 	SchedulerExecCMDPattern = APIv1Prefix + "/device/name/*/*"
+
+	CorrelationHeader = clients.CorrelationHeader
 )

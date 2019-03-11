@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 
 func TestInitializeLoggingClientByFile(test *testing.T) {
@@ -31,7 +31,7 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 	var clientConfig = map[string]common.ClientInfo{common.ClientData: common.ClientInfo{Protocol: "http", Host: "www.google.com", Port: 81, Timeout: 3000}}
 	var config = common.Config{Clients: clientConfig}
 	common.CurrentConfig = &config
-	common.LoggingClient = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File, "DEBUG")
+	common.LoggingClient = logger.NewClient("test_service", false, "./device-simple.log", "DEBUG")
 
 	err := checkServiceAvailableByPing(common.ClientData)
 

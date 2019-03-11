@@ -6,3 +6,4 @@ example/cmd/device-system/device-system
 glide.lock
 vendor
 .idea
+go.sum

@@ -9,13 +9,16 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"net/http"
+	"reflect"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 )
 
 func BuildAddr(host string, port string) string {
@@ -44,7 +47,8 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 }
 
 func SendEvent(event *models.Event) {
-	_, err := EventClient.Add(event)
+	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
+	_, err := EventClient.Add(event, ctx)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
 	}
@@ -69,7 +73,7 @@ func CompareDevices(a models.Device, b models.Device) bool {
 	profileOk := CompareDeviceProfiles(a.Profile, b.Profile)
 	serviceOk := CompareDeviceServices(a.Service, b.Service)
 
-	return a.Addressable == b.Addressable &&
+	return reflect.DeepEqual(a.Protocols, b.Protocols) &&
 		a.AdminState == b.AdminState &&
 		a.Description == b.Description &&
 		a.Id == b.Id &&
@@ -87,7 +91,7 @@ func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 	devResourcesOk := CompareDeviceResources(a.DeviceResources, b.DeviceResources)
 	resourcesOk := CompareResources(a.Resources, b.Resources)
 
-	// TODO: Objects fields aren't compared as to do properly
+	// TODO: Objects fields aren't compared as to dr properly
 	// requires introspection as Obects is a slice of interface{}
 
 	return a.DescribedObject == b.DescribedObject &&
@@ -101,13 +105,13 @@ func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 		resourcesOk
 }
 
-func CompareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bool {
+func CompareDeviceResources(a []models.DeviceResource, b []models.DeviceResource) bool {
 	if len(a) != len(b) {
 		return false
 	}
 
 	for i := range a {
-		// TODO: Attributes aren't compared, as to do properly
+		// TODO: Attributes aren't compared, as to dr properly
 		// requires introspection as Attributes is an interface{}
 
 		if a[i].Description != b[i].Description ||
@@ -155,7 +159,6 @@ func CompareResourceOperations(a []models.ResourceOperation, b []models.Resource
 		if a[i].Index != b[i].Index ||
 			a[i].Operation != b[i].Operation ||
 			a[i].Object != b[i].Object ||
-			a[i].Property != b[i].Property ||
 			a[i].Parameter != b[i].Parameter ||
 			a[i].Resource != b[i].Resource ||
 			!secondaryOk ||
@@ -210,16 +213,17 @@ func CompareStrStrMap(a map[string]string, b map[string]string) bool {
 
 func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addressable, err := AddressableClient.AddressableForName(name)
+	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
+	addressable, err := AddressableClient.AddressableForName(name, ctx)
 	if err != nil {
-		if _, ok := err.(types.ErrNotFound); ok {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			LoggingClient.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addressable = *addr
 			addressable.Name = name
 			addressable.Origin = millis
 			LoggingClient.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
-			id, err := AddressableClient.Add(&addressable)
+			id, err := AddressableClient.Add(&addressable, ctx)
 			if err != nil {
 				LoggingClient.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
 				return nil, err
@@ -227,7 +231,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 			if err = VerifyIdFormat(id, "Addressable"); err != nil {
 				return nil, err
 			}
-			addressable.Id = bson.ObjectIdHex(id)
+			addressable.Id = id
 		} else {
 			LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return nil, err
@@ -239,9 +243,9 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 	return &addressable, nil
 }
 
-func VerifyIdFormat(id string, objName string) error {
-	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		errMsg := fmt.Sprintf("Add %s returned invalid Id: %s", objName, id)
+func VerifyIdFormat(id string, drName string) error {
+	if len(id) == 0 {
+		errMsg := fmt.Sprintf("The Id of %s is empty string", drName)
 		LoggingClient.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}

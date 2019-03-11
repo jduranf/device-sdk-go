@@ -8,13 +8,14 @@
 package provision
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 )
 
 func LoadDevices(deviceList []common.DeviceConfig) error {
@@ -43,17 +44,11 @@ func createDevice(dc common.DeviceConfig) error {
 		return fmt.Errorf(errMsg)
 	}
 
-	addr, err := common.MakeAddressable(dc.Name, &dc.Addressable)
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("makeAddressable failed: %v", err))
-		return err
-	}
-
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device := &models.Device{
 		Name:           dc.Name,
 		Profile:        prf,
-		Addressable:    *addr,
+		Protocols:      dc.Protocols,
 		Labels:         dc.Labels,
 		Service:        common.CurrentDeviceService,
 		AdminState:     models.Unlocked,
@@ -62,7 +57,8 @@ func createDevice(dc common.DeviceConfig) error {
 	device.Origin = millis
 	device.Description = dc.Description
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
-	id, err := common.DeviceClient.Add(device)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.DeviceClient.Add(device, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return err
@@ -70,7 +66,7 @@ func createDevice(dc common.DeviceConfig) error {
 	if err = common.VerifyIdFormat(id, "Device"); err != nil {
 		return err
 	}
-	device.Id = bson.ObjectIdHex(id)
+	device.Id = id
 	cache.Devices().Add(*device)
 
 	return nil

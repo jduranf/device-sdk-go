@@ -16,7 +16,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/gorilla/mux"
 )
 
@@ -72,7 +72,7 @@ func callbackFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	appErr := CallbackHandler(cbAlert, req.Method)
+	appErr := handler.CallbackHandler(cbAlert, req.Method)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else {

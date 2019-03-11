@@ -8,6 +8,7 @@
 package provision
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -15,8 +16,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,7 +38,8 @@ func LoadProfiles(path string) error {
 	}
 	common.LoggingClient.Debug(fmt.Sprintf("profiles: created absolute path for loading pre-defined Device Profiles: %s", absPath))
 
-	profiles, err := common.DeviceProfileClient.DeviceProfiles()
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	profiles, err := common.DeviceProfileClient.DeviceProfiles(ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v", err))
 		return err
@@ -76,7 +78,8 @@ func LoadProfiles(path string) error {
 			}
 
 			// add profile to metadata
-			id, err := common.DeviceProfileClient.Add(&profile)
+			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+			id, err := common.DeviceProfileClient.Add(&profile, ctx)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
@@ -85,7 +88,7 @@ func LoadProfiles(path string) error {
 				return err
 			}
 
-			profile.Id = bson.ObjectIdHex(id)
+			profile.Id = id
 			cache.Profiles().Add(profile)
 			CreateDescriptorsFromProfile(&profile)
 		}
@@ -102,7 +105,7 @@ func profileSliceToMap(profiles []models.DeviceProfile) map[string]models.Device
 }
 
 func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
-	prs := profile.Resources
+	/*prs := profile.Resources
 	for _, pr := range prs {
 		for _, op := range pr.Get {
 			createDescriptorFromResourceOperation(profile.Name, op)
@@ -110,7 +113,7 @@ func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
 		for _, op := range pr.Set {
 			createDescriptorFromResourceOperation(profile.Name, op)
 		}
-	}
+	}*/
 
 }
 
@@ -119,11 +122,11 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 		// Value Descriptor has been created
 		return
 	} else {
-		devObj, ok := cache.Profiles().DeviceObject(profileName, op.Object)
+		dr, ok := cache.Profiles().DeviceResource(profileName, op.Object)
 		if !ok {
 			common.LoggingClient.Error(fmt.Sprintf("can't find Device Object %s to match Resource Operation %v in Device Profile %s", op.Object, op, profileName))
 		}
-		desc, err := createDescriptor(op.Parameter, devObj)
+		desc, err := createDescriptor(op.Parameter, dr)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
 		} else {
@@ -132,9 +135,9 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 	}
 }
 
-func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDescriptor, error) {
-	value := devObj.Properties.Value
-	units := devObj.Properties.Units
+func createDescriptor(name string, dr models.DeviceResource) (*models.ValueDescriptor, error) {
+	value := dr.Properties.Value
+	units := dr.Properties.Units
 
 	common.LoggingClient.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
 
@@ -146,10 +149,11 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
 		Formatting:   "%s",
-		Description:  devObj.Description,
+		Description:  dr.Description,
 	}
 
-	id, err := common.ValueDescriptorClient.Add(desc)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.ValueDescriptorClient.Add(desc, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +162,7 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 		return nil, err
 	}
 
-	desc.Id = bson.ObjectIdHex(id)
+	desc.Id = id
 	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
 
 	return desc, nil

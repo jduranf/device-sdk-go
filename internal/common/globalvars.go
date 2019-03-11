@@ -8,10 +8,10 @@ package common
 
 import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -29,6 +29,4 @@ var (
 	DeviceProfileClient   metadata.DeviceProfileClient
 	LoggingClient         logger.LoggingClient
 	ValueDescriptorClient coredata.ValueDescriptorClient
-	ScheduleClient        metadata.ScheduleClient
-	ScheduleEventClient   metadata.ScheduleEventClient
 )

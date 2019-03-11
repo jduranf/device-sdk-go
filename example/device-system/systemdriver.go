@@ -17,8 +17,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/example/device-system/comp"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 
 type SystemDriver struct {
@@ -46,7 +45,7 @@ var statsValues Stats
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
-func (sys *SystemDriver) DisconnectDevice(address *models.Addressable) error {
+func (sys *SystemDriver) DisconnectDevice(deviceName string, protocols map[string]map[string]string) error {
 	return nil
 }
 
@@ -60,16 +59,16 @@ func (sys *SystemDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (sys *SystemDriver) HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	res = make([]*ds_models.CommandValue, len(reqs))
 	for i := range reqs {
-		sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleReadCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[i].RO.Operation, reqs[i].DeviceObject.Attributes))
+		sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleReadCommands: protocols: %v op: %v attrs: %v", protocols, reqs[i].RO.Operation, reqs[i].DeviceResource.Attributes))
 
 		var value uint64
 		var tmp int32
-		if reqs[i].DeviceObject.Name != "CpuTemp" {
-			value, err = getValue(reqs[i].DeviceObject.Name)
+		if reqs[i].DeviceResource.Name != "CpuTemp" {
+			value, err = getValue(reqs[i].DeviceResource.Name)
 			if err != nil {
 				sys.lc.Warn(fmt.Sprintf("Error getting system data: %v", err))
 				return
@@ -83,7 +82,7 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 		}
 
 		now := time.Now().UnixNano() / int64(time.Millisecond)
-		if reqs[i].DeviceObject.Name == "StatusO1" || reqs[i].DeviceObject.Name == "StatusO2" {
+		if reqs[i].DeviceResource.Name == "StatusO1" || reqs[i].DeviceResource.Name == "StatusO2" {
 			status := false
 			if value == 1 {
 				status = true
@@ -91,7 +90,7 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 			cv, _ := ds_models.NewBoolValue(&reqs[i].RO, now, status)
 			res[i] = cv
 		} else {
-			if reqs[i].DeviceObject.Name == "CpuTemp" {
+			if reqs[i].DeviceResource.Name == "CpuTemp" {
 				cv, _ := ds_models.NewInt32Value(&reqs[i].RO, now, tmp)
 				res[i] = cv
 			} else {
@@ -108,7 +107,7 @@ func (sys *SystemDriver) HandleReadCommands(dev *models.Device, addr *models.Add
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (sys *SystemDriver) HandleWriteCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest,
+func (sys *SystemDriver) HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 
 	if len(reqs) != 1 {
@@ -120,7 +119,7 @@ func (sys *SystemDriver) HandleWriteCommands(dev *models.Device, addr *models.Ad
 		return err
 	}
 
-	if reqs[0].DeviceObject.Name == "StatusO1" {
+	if reqs[0].DeviceResource.Name == "StatusO1" {
 		if params[0].NumericValue[0] == 0 {
 			ioutil.WriteFile(gpioStatusO1, []byte("0"), 0644)
 		} else {
@@ -128,7 +127,7 @@ func (sys *SystemDriver) HandleWriteCommands(dev *models.Device, addr *models.Ad
 		}
 	}
 
-	if reqs[0].DeviceObject.Name == "StatusO2" {
+	if reqs[0].DeviceResource.Name == "StatusO2" {
 		if params[0].NumericValue[0] == 0 {
 			ioutil.WriteFile(gpioStatusO2, []byte("0"), 0644)
 		} else {
@@ -136,13 +135,13 @@ func (sys *SystemDriver) HandleWriteCommands(dev *models.Device, addr *models.Ad
 		}
 	}
 
-	if reqs[0].DeviceObject.Name == "Reboot" {
+	if reqs[0].DeviceResource.Name == "Reboot" {
 		if params[0].NumericValue[0] != 0 {
 			go waitToReboot(sys)
 		}
 	}
 
-	sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleWriteCommands: device: %s, operation: %v, parameters: %v", addr.Name, reqs[0].RO.Operation, params))
+	sys.lc.Debug(fmt.Sprintf("SystemDriver.HandleWriteCommands: protocols: %v, operation: %v, parameters: %v", protocols, reqs[0].RO.Operation, params))
 	return nil
 }
 

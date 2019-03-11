@@ -10,7 +10,7 @@ package cache
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -23,7 +23,6 @@ type DeviceCache interface {
 	All() []models.Device
 	Add(device models.Device) error
 	Update(device models.Device) error
-	UpdateAddressable(addressable models.Addressable) error
 	Remove(id string) error
 	RemoveByName(name string) error
 	UpdateAdminState(id string, state models.AdminState) error
@@ -76,33 +75,16 @@ func (d *deviceCache) Add(device models.Device) error {
 		return fmt.Errorf("device %s has already existed in cache", device.Name)
 	}
 	d.dMap[device.Name] = &device
-	d.nameMap[device.Id.Hex()] = device.Name
+	d.nameMap[device.Id] = device.Name
 	return nil
 }
 
 // Update updates the device in the cache
 func (d *deviceCache) Update(device models.Device) error {
-	if err := d.Remove(device.Id.Hex()); err != nil {
+	if err := d.Remove(device.Id); err != nil {
 		return err
 	}
 	return d.Add(device)
-}
-
-// UpdateAddressable updates the device addressable in the cache
-func (d *deviceCache) UpdateAddressable(add models.Addressable) error {
-	found := false
-	for _, device := range d.dMap {
-		if device.Addressable.Id == add.Id {
-			device.Addressable = add
-			found = true
-		}
-	}
-
-	if found == false {
-		return fmt.Errorf("addressable %s does not exist in cache", add.Id.Hex())
-	}
-
-	return nil
 }
 
 // Remove removes the specified device by id from the cache.
@@ -122,7 +104,7 @@ func (d *deviceCache) RemoveByName(name string) error {
 		return fmt.Errorf("device %s does not exist in cache", name)
 	}
 
-	delete(d.nameMap, device.Id.Hex())
+	delete(d.nameMap, device.Id)
 	delete(d.dMap, name)
 	return nil
 }
@@ -146,7 +128,7 @@ func newDeviceCache(devices []models.Device) DeviceCache {
 	nameMap := make(map[string]string, defaultSize)
 	for i, d := range devices {
 		dMap[d.Name] = &devices[i]
-		nameMap[d.Id.Hex()] = d.Name
+		nameMap[d.Id] = d.Name
 	}
 	dc = &deviceCache{dMap: dMap, nameMap: nameMap}
 	return dc

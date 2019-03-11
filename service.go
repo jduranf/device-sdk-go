@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +12,7 @@
 package device
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -25,9 +27,9 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"gopkg.in/mgo.v2/bson"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 )
 
 var (
@@ -68,6 +70,12 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return err
 	}
 
+	// If useRegistry selected then configLoader.RegistryClient will not be nil
+	if configLoader.RegistryClient != nil {
+		// Logging has now been initialized so can start listening for configuration changes.
+		go configLoader.ListenForConfigChanges()
+	}
+
 	err = selfRegister()
 	if err != nil {
 		return fmt.Errorf("Couldn't register to metadata service")
@@ -83,11 +91,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
 	if err != nil {
 		return fmt.Errorf("Failed to create the pre-defined Devices")
-	}
-
-	err = provision.LoadSchedulesAndEvents(common.CurrentConfig)
-	if err != nil {
-		return fmt.Errorf("Failed to create the pre-defined Schedules or Schedule Events")
 	}
 
 	s.cw = newWatchers()
@@ -124,10 +127,11 @@ func (s *Service) Start(errChan chan error) (err error) {
 func selfRegister() error {
 	common.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
-	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName, ctx)
 
 	if err != nil {
-		if _, ok := err.(types.ErrNotFound); ok {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			common.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
 			ds, err = createNewDeviceService()
 		} else {
@@ -162,7 +166,8 @@ func createNewDeviceService() (models.DeviceService, error) {
 	}
 	ds.Service.Origin = millis
 
-	id, err := common.DeviceServiceClient.Add(&ds)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.DeviceServiceClient.Add(&ds, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
 		return models.DeviceService{}, err
@@ -173,17 +178,18 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 	// NOTE - this differs from Addressable and Device objects,
 	// neither of which require the '.Service'prefix
-	ds.Service.Id = bson.ObjectIdHex(id)
-	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+	ds.Service.Id = id
+	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id)
 
 	return ds, nil
 }
 
 func makeNewAddressable() (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addr, err := common.AddressableClient.AddressableForName(common.ServiceName)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, ctx)
 	if err != nil {
-		if _, ok := err.(types.ErrNotFound); ok {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
@@ -197,7 +203,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 				Port:       svc.svcInfo.Port,
 				Path:       common.APICallbackRoute,
 			}
-			id, err := common.AddressableClient.Add(&addr)
+			id, err := common.AddressableClient.Add(&addr, ctx)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
 				return nil, err
@@ -205,7 +211,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
 				return nil, err
 			}
-			addr.Id = bson.ObjectIdHex(id)
+			addr.Id = id
 		} else {
 			common.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return nil, err

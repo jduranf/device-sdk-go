@@ -13,8 +13,7 @@ import (
 	"fmt"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 
 type ModbusDriver struct {
@@ -26,7 +25,7 @@ const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
-func (m *ModbusDriver) DisconnectDevice(address *models.Addressable) error {
+func (m *ModbusDriver) DisconnectDevice(deviceName string, protocols map[string]map[string]string) error {
 	return nil
 }
 
@@ -40,10 +39,10 @@ func (m *ModbusDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (m *ModbusDriver) HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	var modbusDevice *ModbusDevice
-	modbusDevice, err = getClient(addr)
+	modbusDevice, err = getClient(protocols)
 	if err != nil {
 		m.lc.Warn(fmt.Sprintf("Error connecting with Modbus: %v", err))
 		return
@@ -52,12 +51,12 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 
 	res = make([]*ds_models.CommandValue, len(reqs))
 	for i := range reqs {
-		m.lc.Debug(fmt.Sprintf("ModbusDriver.HandleReadCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[i].RO.Operation, reqs[i].DeviceObject.Attributes))
+		m.lc.Debug(fmt.Sprintf("ModbusDriver.HandleReadCommands: protocols: %v op: %v attrs: %v", protocols, reqs[i].RO.Operation, reqs[i].DeviceResource.Attributes))
 
 		// TODO: Read multiple registers at the same time if they have contiguous addresses
 
 		var readConfig modbusReadConfig
-		readConfig, err = getReadValues(&reqs[i].DeviceObject)
+		readConfig, err = getReadValues(&reqs[i].DeviceResource)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error parsing Modbus data: %v", err))
 			return
@@ -66,7 +65,7 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 		var data []byte
 		data, err = readModbus(modbusDevice.client, readConfig)
 
-		updateOperatingState(m, err, dev)
+		updateOperatingState(m, err, deviceName)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error reading Modbus data: %v", err))
 			return
@@ -88,11 +87,11 @@ func (m *ModbusDriver) HandleReadCommands(dev *models.Device, addr *models.Addre
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (m *ModbusDriver) HandleWriteCommands(dev *models.Device, addr *models.Addressable, reqs []ds_models.CommandRequest,
+func (m *ModbusDriver) HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 	var err error
 	var modbusDevice *ModbusDevice
-	modbusDevice, err = getClient(addr)
+	modbusDevice, err = getClient(protocols)
 	if err != nil {
 		m.lc.Warn(fmt.Sprintf("Error connecting with Modbus: %v", err))
 		return err
@@ -100,12 +99,12 @@ func (m *ModbusDriver) HandleWriteCommands(dev *models.Device, addr *models.Addr
 	defer releaseClient(modbusDevice)
 
 	for i := range reqs {
-		m.lc.Debug(fmt.Sprintf("ModbusDriver.HandleWriteCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[i].RO.Operation, reqs[i].DeviceObject.Attributes))
+		m.lc.Debug(fmt.Sprintf("ModbusDriver.HandleWriteCommands: protocols: %v op: %v attrs: %v", protocols, reqs[i].RO.Operation, reqs[i].DeviceResource.Attributes))
 
 		// TODO: Write multiple registers at the same time if they have contiguous addresses
 
 		var readConfig modbusReadConfig
-		readConfig, err = getReadValues(&reqs[i].DeviceObject)
+		readConfig, err = getReadValues(&reqs[i].DeviceResource)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error parsing Modbus data: %v", err))
 			return err
@@ -113,7 +112,7 @@ func (m *ModbusDriver) HandleWriteCommands(dev *models.Device, addr *models.Addr
 		var value []byte
 		value = setWriteValue(*params[i], readConfig)
 		_, err = writeModbus(modbusDevice.client, readConfig, value)
-		updateOperatingState(m, err, dev)
+		updateOperatingState(m, err, deviceName)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error writing Modbus data: %v", err))
 			return err

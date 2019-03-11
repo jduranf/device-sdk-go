@@ -12,6 +12,7 @@ package modbus
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -25,8 +26,9 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/goburrow/modbus"
+	"github.com/google/uuid"
 )
 
 const (
@@ -36,11 +38,7 @@ const (
 )
 
 const (
-	modbusTCP   = "TCP"
-	modbusHTTP  = "HTTP"
-	modbusRTU   = "RTU"
-	modbusOTHER = "OTHER"
-	comTimeout  = 2000
+	comTimeout = 2000
 )
 
 type ModbusDevice struct {
@@ -81,11 +79,13 @@ func initModbusCache() {
 	})
 }
 
-func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err error) {
-	if addressable.Protocol == modbusTCP || addressable.Protocol == modbusHTTP {
+func getClient(protocols map[string]map[string]string) (modbusDevice *ModbusDevice, err error) {
+	modbusTCP, okTCP := protocols["ModbusTCP"]
+	modbusRTU, okRTU := protocols["ModbusRTU"]
+	if okTCP {
 		// Get TCP configuration
 		var address string
-		address, err = getTCPConfig(addressable)
+		address, err = getTCPConfig(modbusTCP)
 		if err != nil {
 			return
 		}
@@ -108,10 +108,10 @@ func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err
 			modbusDevice.mutex.Unlock()
 			return
 		}
-	} else if addressable.Protocol == modbusRTU || addressable.Protocol == modbusOTHER {
+	} else if okRTU {
 		// Get RTU configuration
 		var config rtuConfig
-		config, err = getRTUConfig(addressable)
+		config, err = getRTUConfig(modbusRTU)
 		if err != nil {
 			return
 		}
@@ -140,7 +140,7 @@ func getClient(addressable *models.Addressable) (modbusDevice *ModbusDevice, err
 			return
 		}
 	} else {
-		err = fmt.Errorf("Invalid Modbus protocol: %s", addressable.Protocol)
+		err = fmt.Errorf("Invalid Modbus protocol: %v", protocols)
 	}
 	return
 }
@@ -155,75 +155,115 @@ func releaseClient(modbusDevice *ModbusDevice) {
 	modbusDevice.mutex.Unlock()
 }
 
-func getTCPConfig(addressable *models.Addressable) (address string, err error) {
+func getTCPConfig(protocol map[string]string) (url string, err error) {
 
-	if addressable.Address == "" {
-		err = fmt.Errorf("Invalid address")
+	host, ok := protocol["Host"]
+	if !ok {
+		err = fmt.Errorf("Host not defined")
+		return
+	}
+	if host == "" {
+		err = fmt.Errorf("Invalid host")
 		return
 	}
 
-	if addressable.Port == 0 {
-		err = fmt.Errorf("Invalid port")
+	portStr, ok := protocol["Port"]
+	if !ok {
+		err = fmt.Errorf("Port not defined")
+		return
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		err = fmt.Errorf("Invalid port: %v", err)
+		return
+	}
+	if port == 0 {
+		err = fmt.Errorf("Invalid port value: %d", port)
 		return
 	}
 
-	address = fmt.Sprintf("%s:%d", addressable.Address, addressable.Port)
+	url = fmt.Sprintf("%s:%d", host, port)
 	return
 }
 
-func getRTUConfig(addressable *models.Addressable) (config rtuConfig, err error) {
+func getRTUConfig(protocol map[string]string) (config rtuConfig, err error) {
 
-	settings := strings.Split(addressable.Address, ",")
-	if len(settings) != 5 {
-		err = fmt.Errorf("Invalid Modbus RTU address")
+	// Get serial port
+	serialPort, ok := protocol["SerialPort"]
+	if !ok {
+		err = fmt.Errorf("Serial port not defined")
 		return
 	}
-
-	config.address = settings[0]
+	config.address = serialPort
 
 	// Get baudrate
-	config.baudRate, err = strconv.Atoi(settings[1])
+	baudRate, ok := protocol["BaudRate"]
+	if !ok {
+		err = fmt.Errorf("Baud rate not defined")
+		return
+	}
+	config.baudRate, err = strconv.Atoi(baudRate)
 	if err != nil {
 		err = fmt.Errorf("Invalid baud rate: %v", err)
 		return
 	}
 
 	// Get data bits
-	if settings[2] != "8" {
-		err = fmt.Errorf("Invalid data bits: %s", settings[2])
+	dataBits, ok := protocol["DataBits"]
+	if !ok {
+		err = fmt.Errorf("Data bits not defined")
 		return
 	}
-	config.dataBits, _ = strconv.Atoi(settings[2])
+	if dataBits != "8" {
+		err = fmt.Errorf("Invalid data bits value: %s", dataBits)
+		return
+	}
+	config.dataBits = 8
 
 	// Get stop bits
-	if settings[3] != "0" && settings[3] != "1" {
-		err = fmt.Errorf("Invalid stop bits: %s", settings[3])
+	stopBits, ok := protocol["StopBits"]
+	if !ok {
+		err = fmt.Errorf("Stop bits not defined")
 		return
 	}
-	config.stopBits, _ = strconv.Atoi(settings[3])
+	if stopBits != "0" && stopBits != "1" {
+		err = fmt.Errorf("Invalid stop bits: %s", stopBits)
+		return
+	}
+	config.stopBits, _ = strconv.Atoi(stopBits)
 
 	// Get parity
-	if settings[4] == "0" {
-		settings[4] = "N"
-	} else if settings[4] == "1" {
-		settings[4] = "O"
-	} else if settings[4] == "2" {
-		settings[4] = "E"
-	}
-	if settings[4] != "N" && settings[4] != "O" && settings[4] != "E" {
-		err = fmt.Errorf("Invalid parity: %s", settings[4])
+	parity, ok := protocol["Parity"]
+	if !ok {
+		err = fmt.Errorf("Stop bits not defined")
 		return
 	}
-	config.parity = settings[4]
+	if parity == "0" {
+		parity = "N"
+	} else if parity == "1" {
+		parity = "O"
+	} else if parity == "2" {
+		parity = "E"
+	}
+	if parity != "N" && parity != "O" && parity != "E" {
+		err = fmt.Errorf("Invalid parity: %s", parity)
+		return
+	}
+	config.parity = parity
 
 	// Get slave ID
-	slave, err := strconv.Atoi(addressable.Path)
+	slaveID, ok := protocol["SlaveID"]
+	if !ok {
+		err = fmt.Errorf("Slave ID not defined")
+		return
+	}
+	slave, err := strconv.Atoi(slaveID)
 	if err != nil {
-		err = fmt.Errorf("Invalid slave ID: %v", err)
+		err = fmt.Errorf("Invalid slave ID value: %v", err)
 		return
 	}
 	if (slave == 0) || (slave > 247) {
-		err = fmt.Errorf("Invalid slave ID: %d", slave)
+		err = fmt.Errorf("Invalid slave ID value: %d", slave)
 		return
 	}
 	config.slaveID = byte(slave)
@@ -265,22 +305,22 @@ func connectRTUDevice(modbusDevice *ModbusDevice) (err error) {
 	return
 }
 
-func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err error) {
+func getReadValues(dr *models.DeviceResource) (readConfig modbusReadConfig, err error) {
 
 	// Get read function
-	if len(do.Attributes) < 3 {
-		err = fmt.Errorf("Invalid number attributes: %v", do.Attributes)
+	if len(dr.Attributes) < 3 {
+		err = fmt.Errorf("Invalid number attributes: %v", dr.Attributes)
 		return
 	}
-	readConfig.function = do.Attributes["PrimaryTable"].(string)
+	readConfig.function = dr.Attributes["PrimaryTable"].(string)
 	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" {
-		err = fmt.Errorf("Invalid attribute: %v", do.Attributes)
+		err = fmt.Errorf("Invalid attribute: %v", dr.Attributes)
 		return
 	}
 	//	Get address
-	strAddress, ok := do.Attributes["StartingAddress"].(string)
+	strAddress, ok := dr.Attributes["StartingAddress"].(string)
 	if ok == false {
-		err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
+		err = fmt.Errorf("Invalid attribute format: %v", dr.Attributes)
 		return
 	}
 	var add int
@@ -292,7 +332,7 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 	readConfig.address = uint16(add)
 
 	// Get number of registers and value Type
-	vType := do.Attributes["ValueType"].(string)
+	vType := dr.Attributes["ValueType"].(string)
 	if vType == "UINT8" || vType == "INT8" || vType == "UINT16" || vType == "INT16" || vType == "FLOAT16" || vType == "BOOL" {
 		readConfig.size = 1
 		readConfig.vType = vType
@@ -304,9 +344,9 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 		readConfig.vType = vType
 	} else if vType == "STRING" || vType == "ARRAY" {
 		readConfig.vType = vType
-		nRegs, ok := do.Attributes["Length"].(string)
+		nRegs, ok := dr.Attributes["Length"].(string)
 		if ok == false {
-			err = fmt.Errorf("Invalid attribute format: %v", do.Attributes)
+			err = fmt.Errorf("Invalid attribute format: %v", dr.Attributes)
 			return
 		}
 		var reg int
@@ -322,24 +362,24 @@ func getReadValues(do *models.DeviceObject) (readConfig modbusReadConfig, err er
 	}
 
 	// Get Swap
-	isByteSwap := do.Attributes["IsByteSwap"].(string)
+	isByteSwap := dr.Attributes["IsByteSwap"].(string)
 	if isByteSwap == "true" || isByteSwap == "True" || isByteSwap == "TRUE" {
 		readConfig.isByteSwap = true
 	} else {
 		readConfig.isByteSwap = false
 	}
-	isWordSwap := do.Attributes["IsWordSwap"].(string)
+	isWordSwap := dr.Attributes["IsWordSwap"].(string)
 	if isWordSwap == "true" || isWordSwap == "True" || isWordSwap == "TRUE" {
 		readConfig.isByteSwap = true
 	} else {
 		readConfig.isByteSwap = false
 	}
 
-	if do.Properties.Value.Type == "Bool" || do.Properties.Value.Type == "String" || do.Properties.Value.Type == "Integer" ||
-		do.Properties.Value.Type == "Float" || do.Properties.Value.Type == "Json" {
-		readConfig.resultType = do.Properties.Value.Type
+	if dr.Properties.Value.Type == "Bool" || dr.Properties.Value.Type == "String" || dr.Properties.Value.Type == "Integer" ||
+		dr.Properties.Value.Type == "Float" || dr.Properties.Value.Type == "Json" {
+		readConfig.resultType = dr.Properties.Value.Type
 	} else {
-		err = fmt.Errorf("Invalid resultType: %v", do.Properties.Value.Type)
+		err = fmt.Errorf("Invalid resultType: %v", dr.Properties.Value.Type)
 		return
 	}
 	return
@@ -611,22 +651,25 @@ func swapBitDataBytes(dataBytes []byte, isByteSwap bool, isWordSwap bool) []byte
 	return dataBytes
 }
 
-func updateOperatingState(m *ModbusDriver, e error, device *models.Device) {
+func updateOperatingState(m *ModbusDriver, e error, deviceName string) {
 	var devEn int
+
+	device, _ := cache.Devices().ForName(deviceName)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	if e != nil {
 		if strings.Contains(e.Error(), "timeout") {
 			if device.OperatingState == models.Enabled {
 				device.OperatingState = models.Disabled
-				cache.Devices().Update(*device)
-				go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled)
+				cache.Devices().Update(device)
+				go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, ctx)
 				m.lc.Warn(fmt.Sprintf("Updated OperatingState of device: %s to %s", device.Name, models.Disabled))
 			}
 		}
 	} else {
 		if device.OperatingState == models.Disabled {
 			device.OperatingState = models.Enabled
-			cache.Devices().Update(*device)
-			go common.DeviceClient.UpdateOpStateByName(device.Name, models.Enabled)
+			cache.Devices().Update(device)
+			go common.DeviceClient.UpdateOpStateByName(device.Name, models.Enabled, ctx)
 			m.lc.Info(fmt.Sprintf("Updated OperatingState of device: %s to %s", device.Name, models.Enabled))
 		}
 	}
@@ -642,5 +685,4 @@ func updateOperatingState(m *ModbusDriver, e error, device *models.Device) {
 	} else {
 		ioutil.WriteFile(gpioSlavesRedLed, []byte("1"), 0644)
 	}
-
 }

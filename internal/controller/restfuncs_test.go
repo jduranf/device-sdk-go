@@ -10,7 +10,7 @@ package controller
 import (
 	"bytes"
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +18,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 	"github.com/gorilla/mux"
 )
 
@@ -43,7 +43,7 @@ func TestCallback(t *testing.T) {
 		{"Invalid id", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
-	lc := logger.NewClient("update_test", false, "", "DEBUG")
+	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
 	common.LoggingClient = lc
 	common.DeviceClient = &mock.DeviceClientMock{}
 	r := InitRestRoutes()
@@ -98,8 +98,6 @@ func TestCommandNoDevice(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = false
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	common.ScheduleClient = &mock.ScheduleClientMock{}
-	common.ScheduleEventClient = &mock.ScheduleEventClientMock{}
 	r := InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)
@@ -151,7 +149,7 @@ addr.Origin = millis
 
 // Create a locked Device
 d := &models.Device{name: "DummyDevice", AdminState: "LOCKED", OperatingState: "ENABLED"}
-d.Id = bson.ObjectIdHex(testDeviceId)
+d.Id = testDeviceId
 
 s.cd.Add(d)
 

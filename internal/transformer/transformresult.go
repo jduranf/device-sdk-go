@@ -8,15 +8,17 @@ package transformer
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"math"
 	"strconv"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 )
 
 const (
@@ -120,67 +122,69 @@ func transformReadBase(value interface{}, base string) (interface{}, error) {
 func transformReadScale(value interface{}, scale string) (interface{}, error) {
 	switch v := value.(type) {
 	case uint8:
-		s, err := strconv.ParseUint(scale, 10, 8)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint8(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint8(nv * s)
 	case uint16:
-		s, err := strconv.ParseUint(scale, 10, 16)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint16(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint16(nv * s)
 	case uint32:
-		s, err := strconv.ParseUint(scale, 10, 32)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint32(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint32(nv * s)
 	case uint64:
-		s, err := strconv.ParseUint(scale, 10, 64)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		value = v * s
+		nv := float64(v)
+		value = uint64(nv * s)
 	case int8:
-		s, err := strconv.ParseInt(scale, 10, 8)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int8(s)
-		value = v * ns
+		nv := float64(v)
+		value = int8(nv * s)
 	case int16:
-		s, err := strconv.ParseInt(scale, 10, 16)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int16(s)
-		value = v * ns
+		nv := float64(v)
+		value = int16(nv * s)
 	case int32:
-		s, err := strconv.ParseInt(scale, 10, 32)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int32(s)
-		value = v * ns
+		nv := float64(v)
+		value = int32(nv * s)
 	case int64:
-		s, err := strconv.ParseInt(scale, 10, 64)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		value = v * s
+		nv := float64(v)
+		value = int64(nv * s)
 	case float32:
 		s, err := strconv.ParseFloat(scale, 32)
 		if err != nil {
@@ -360,7 +364,8 @@ func CheckAssertion(cv *ds_models.CommandValue, assertion string, device *models
 	if assertion != "" && cv.ValueToString() != assertion {
 		device.OperatingState = models.Disabled
 		cache.Devices().Update(*device)
-		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled)
+		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, ctx)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		common.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
@@ -377,4 +382,3 @@ func MapCommandValue(value *ds_models.CommandValue) (*ds_models.CommandValue, bo
 	}
 	return result, ok
 }
-

@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,9 +10,13 @@ package common
 
 import (
 	"fmt"
-
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
+
+// WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
+type WritableInfo struct {
+	// Level is the logging level of writing log message
+	LogLevel string
+}
 
 // ServiceInfo is a struct which contains service related configuration
 // settings.
@@ -20,10 +25,8 @@ type ServiceInfo struct {
 	Host string
 	// Port is the HTTP port of the service.
 	Port int
-	// ConnectRetries is the number of times the DS will try
-	// to connect to Core Metadata to either register itself
-	// and provision it's objects, or use existing data. If
-	// this limit is exceeded, the DS will exit.
+	// ConnectRetries is the number of times the DS will try to connect to all dependent services.
+	// If exceeded for even one dependent service, the DS will exit.
 	ConnectRetries int
 	// Labels are...
 	Labels []string
@@ -32,8 +35,9 @@ type ServiceInfo struct {
 	// ReadMaxLimit specifies the maximum size list supported
 	// in response to REST calls to other services.
 	ReadMaxLimit int
-	// Timeout specifies a timeout (in milliseconds) for
-	// processing REST calls from other services.
+	// Timeout (in milliseconds) specifies both
+	// - timeout for processing REST calls and
+	// - interval time the DS will wait between each retry call.
 	Timeout int
 	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
 	EnableAsyncReadings bool
@@ -46,6 +50,8 @@ type RegistryService struct {
 	Host string
 	// Port is the HTTP port of a RegistryService.
 	Port int
+	// Type of Registry implementation to use, i.e. consul
+	Type string
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
@@ -90,20 +96,6 @@ type LoggingInfo struct {
 	EnableRemote bool
 	// File is the pathname of a local log file to be created.
 	File string
-	// Level is the logging level of writing log message
-	Level string
-}
-
-// ScheduleEventInfo is a struct which contains event schedule specific
-// configuration settings.
-type ScheduleEventInfo struct {
-	// Schedule is the name of the associated schedule.
-	Schedule string
-	// Path is the endpoint of the DS to be called when the
-	// ScheduleEvent is triggered.
-	Path string
-	// Service is the DS RegistryService name.
-	Service string
 }
 
 // WatcherInfo is a struct which contains provisionwatcher configuration settings.
@@ -115,6 +107,8 @@ type WatcherInfo struct {
 
 // Config is a struct which contains all of a DS's configuration settings.
 type Config struct {
+	// WritableInfo contains configuration settings that can be changed in the Registry .
+	Writable WritableInfo
 	// Service contains RegistryService-specific settings.
 	Service ServiceInfo
 	// Registry contains registry-specific settings.
@@ -125,14 +119,10 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Schedules is created on startup.
-	Schedules []models.Schedule
-	// SchedulesEvents is created on startup.
-	ScheduleEvents []models.ScheduleEvent
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
 	// DeviceList is the list of pre-define Devices
-	DeviceList []DeviceConfig
+	DeviceList []DeviceConfig `consul:"-"`
 }
 
 // DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
@@ -145,8 +135,8 @@ type DeviceConfig struct {
 	Description string
 	// Other labels applied to the device to help with searching
 	Labels []string
-	// Addressable for the device - stores information about it's address
-	Addressable models.Addressable
+	// Protocols for the device - stores protocol properties
+	Protocols map[string]map[string]string
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
