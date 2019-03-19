@@ -189,12 +189,12 @@ func getTCPConfig(protocol map[string]string) (url string, err error) {
 func getRTUConfig(protocol map[string]string) (config rtuConfig, err error) {
 
 	// Get serial port
-	serialPort, ok := protocol["SerialPort"]
+	address, ok := protocol["Address"]
 	if !ok {
-		err = fmt.Errorf("Serial port not defined")
+		err = fmt.Errorf("Address not defined")
 		return
 	}
-	config.address = serialPort
+	config.address = address
 
 	// Get baudrate
 	baudRate, ok := protocol["BaudRate"]
@@ -251,22 +251,22 @@ func getRTUConfig(protocol map[string]string) (config rtuConfig, err error) {
 	}
 	config.parity = parity
 
-	// Get slave ID
-	slaveID, ok := protocol["SlaveID"]
+	// Get unit ID
+	unitID, ok := protocol["UnitID"]
 	if !ok {
-		err = fmt.Errorf("Slave ID not defined")
+		err = fmt.Errorf("Unit ID not defined")
 		return
 	}
-	slave, err := strconv.Atoi(slaveID)
+	unit, err := strconv.Atoi(unitID)
 	if err != nil {
-		err = fmt.Errorf("Invalid slave ID value: %v", err)
+		err = fmt.Errorf("Invalid unit ID value: %v", err)
 		return
 	}
-	if (slave == 0) || (slave > 247) {
-		err = fmt.Errorf("Invalid slave ID value: %d", slave)
+	if (unit == 0) || (unit > 247) {
+		err = fmt.Errorf("Invalid unit ID value: %d", unit)
 		return
 	}
-	config.slaveID = byte(slave)
+	config.slaveID = byte(unit)
 
 	return
 }

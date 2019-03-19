@@ -11,10 +11,11 @@ package modbus
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
-	"github.com/feclare/edgex-go/core/domain/models"
 )
 
 type ModbusDriver struct {
@@ -133,46 +134,54 @@ func (m *ModbusDriver) Stop(force bool) error {
 }
 
 func (m *ModbusDriver) Discover() (interface{}, error) {
-	//var err error
-	//var modbusDevice *ModbusDevice
-	var addr models.Addressable
+	var err error
+	var modbusDevice *ModbusDevice
 	var readConf modbusReadConfig
-	//var data []byte
+	var data []byte
 	var resp [8]string
 
-	/*Create addressable and Modbus Configuration variable*/
-	addr.Protocol = "RTU"
-	addr.Address = "/dev/ttyUSB1,9600,8,1,N" ///dev/ttymxc7,115200,8,1,N"
+	rtu := map[string]string{
+		"Address":  "/dev/ttyUSB0",
+		"BaudRate": "9600",
+		"DataBits": "8",
+		"StopBits": "1",
+		"Parity":   "N",
+		//"UnitID":   "1",
+	}
+	proto := map[string]map[string]string{
+		"ModbusRTU": rtu,
+	}
 	readConf.function = modbusHoldingRegister
 	readConf.address = 0 //ADD_IR_FACT_MODEL
 	readConf.size = 4
 
 	/*Send query to 8 possibles modules*/
-	/*	for i := 0; i < 8; i++ {
-			addr.Path = strconv.Itoa(i + 1)
+	for i := 0; i < 8; i++ {
+		rtu["UnitID"] = strconv.Itoa(i + 1)
+		proto["ModbusRTU"] = rtu
 
-			modbusDevice, err = getClient(&addr)
-			if err != nil {
-				m.lc.Warn(fmt.Sprintf("Error connecting with Modbus in Discover process: %v", err))
-				releaseClient(modbusDevice)
-				return resp, err
-			}
-			data, err = readModbus(modbusDevice.client, readConf)
-			if err != nil {
-				m.lc.Debug(fmt.Sprintf("Error reading Modbus data in Discover process: %v", err))
-				if strings.Contains(err.Error(), "timeout") {
-					resp[i] = "Empty"
-				} else {
-					resp[i] = "Error"
-				}
-			} else {
-				//resp[i] = fmt.Sprintf("%x", data)
-				resp[i] = string(data[:])
-				fmt.Println(resp[i])
-				resp[i] = "EDS0"
-			}
+		modbusDevice, err = getClient(proto)
+		if err != nil {
+			m.lc.Warn(fmt.Sprintf("Error connecting with Modbus in Discover process: %v", err))
 			releaseClient(modbusDevice)
+			return resp, err
 		}
-	*/
+		data, err = readModbus(modbusDevice.client, readConf)
+		if err != nil {
+			m.lc.Debug(fmt.Sprintf("Error reading Modbus data in Discover process: %v", err))
+			if strings.Contains(err.Error(), "timeout") {
+				resp[i] = "Empty"
+			} else {
+				resp[i] = "Error"
+			}
+		} else {
+			//resp[i] = fmt.Sprintf("%x", data)
+			resp[i] = string(data[:])
+			//fmt.Println(resp[i])
+			resp[i] = "EDS0"
+		}
+		releaseClient(modbusDevice)
+	}
+
 	return resp, nil
 }

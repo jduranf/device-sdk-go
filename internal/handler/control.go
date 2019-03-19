@@ -31,11 +31,10 @@ func DiscoveryHandler(requestMap map[string]string) {
 		case "EDS0":
 			fmt.Printf("Module %d is an EDS0", i)
 			fmt.Println("")
-		default:
-			fmt.Println("Default")
+			//default:
+			//	fmt.Println("Default")
 		}
 	}
-
 	common.LoggingClient.Info(fmt.Sprintf("service: discovery request"))
 }
 

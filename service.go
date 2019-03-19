@@ -117,6 +117,8 @@ func (s *Service) Start(errChan chan error) (err error) {
 
 	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
 
+	//handler.DiscoveryHandler(nil)
+
 	go func() {
 		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r)
 	}()

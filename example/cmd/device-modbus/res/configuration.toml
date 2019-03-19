@@ -51,20 +51,3 @@ FailWaitTime = 10
 EnableRemote = true
 File = "./device-modbus.log"
 Level = "INFO"
-
-[[Schedules]]
-Name = 'devModbus-sch-everyminute'
-Start = '20190101T000000'
-Frequency = 'PT1M'
-
-[[ScheduleEvents]]
-Name = 'devModbus-schev-discover'
-Schedule = 'devModbus-sch-everyminute'
-Service = 'device-modbus'
-[ScheduleEvents.Addressable]
-  Host = 'localhost'
-  Port = 49991
-  Address = 'device-modbus'
-  Protocol = 'http'
-  HTTPMethod = 'POST'
-  Path = '/api/v1/discovery'
