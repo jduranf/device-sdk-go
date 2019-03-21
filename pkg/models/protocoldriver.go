@@ -53,7 +53,5 @@ type ProtocolDriver interface {
 	// which may be added to the device service based on service
 	// config. This function may also optionally trigger sensor
 	// discovery, which could result in dynamic device profile creation.
-	//
-	// TODO: add models.ScanList (or define locally) for devices
 	Discover() (devices interface{}, err error)
 }
