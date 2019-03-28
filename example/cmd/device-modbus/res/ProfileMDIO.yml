@@ -1,0 +1,115 @@
+# Copyright 2019 Circutor. All rights reserved.
+name: "ModuleMDIO"
+manufacturer: "Circutor"
+model: "CVM-D-MDIO"
+description: "Module digital inputs/outputs"
+labels: []
+deviceResources:
+    -
+        name: Fact_Serial_Number
+        description: "Factory Device Serial Number"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61440", ValueType: "STRING", Length: "7", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "RW" }
+    -
+        name: Fact_Serial_ID
+        description: "Factory Device Serial ID"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61450", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+    -
+        name: Fact_Frame_Number
+        description: "Factory Device Frame Number"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61504", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+    -
+        name: Fact_Production_Status
+        description: "Factory Device Production Status"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61536", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+
+    -
+        name: Firmware_Version_Major
+        description: "Firmware_Version_Major"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+    -
+        name: Firmware_Version_Minor
+        description: "Firmware_Version_Minor"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49801", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+    -
+        name: Firmware_Version_Revision
+        description: "Firmware_Version_Revision"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49802", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+    -
+        name: Factory_Model
+        description: "Factory Model"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49804", ValueType: "STRING", Length: "2", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "RW" }
+
+
+resources:
+    -
+        name: Fact_Serial_Number
+        get:
+          - { object: "Fact_Serial_Number", parameter: "Fact_Serial_Number" }
+        set:
+          - { object: "Fact_Serial_Number", parameter: "Fact_Serial_Number" }
+    -
+        name: Fact_Serial_ID
+        get:
+          - { object: "Fact_Serial_ID", parameter: "Fact_Serial_ID" }
+        set:
+          - { object: "Fact_Serial_ID", parameter: "Fact_Serial_ID" }
+    -
+        name: Fact_Frame_Number
+        get:
+          - { object: "Fact_Frame_Number", parameter: "Fact_Frame_Number" }
+        set:
+          - { object: "Fact_Frame_Number", parameter: "Fact_Frame_Number" }
+    -
+        name: Fact_Production_Status
+        get:
+          - { object: "Fact_Production_Status", parameter: "Fact_Production_Status" }
+        set:
+          - { object: "Fact_Production_Status", parameter: "Fact_Production_Status" }
+    -
+        name: Firmware_Version_Major
+        get:
+          - { object: "Firmware_Version_Major", parameter: "Firmware_Version_Major" }
+    -
+        name: Firmware_Version_Minor
+        get:
+          - { object: "Firmware_Version_Minor", parameter: "Firmware_Version_Minor" }
+    -
+        name: Firmware_Version_Revision
+        get:
+          - { object: "Firmware_Version_Revision", parameter: "Firmware_Version_Revision" }
+    -
+        name: Factory_Model
+        get:
+          - { object: "Factory_Model", parameter: "Factory_Model" }

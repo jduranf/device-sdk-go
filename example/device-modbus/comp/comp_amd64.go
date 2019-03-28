@@ -6,4 +6,4 @@
 
 package comp
 
-var SerialAddress string = "/dev/ttyUSB0"
+var SerialAddress string = "/dev/ttyUSB1"

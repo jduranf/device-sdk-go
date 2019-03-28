@@ -96,8 +96,8 @@ func (s *SimpleDriver) Stop(force bool) error {
 // which may be added to the device service based on service
 // config. This function may also optionally trigger sensor
 // discovery, which could result in dynamic device profile creation.
-func (s *SimpleDriver) Discover() (interface{}, error) {
+func (s *SimpleDriver) Discover() error {
 	s.lc.Debug(fmt.Sprintf("SimpleDriver.Discover called"))
 	err := fmt.Errorf("SimpleDriver.Discover unimplemented")
-	return nil, err
+	return err
 }

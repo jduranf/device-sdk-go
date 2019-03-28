@@ -11,10 +11,7 @@ package modbus
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
 
-	"github.com/edgexfoundry/device-sdk-go/example/device-modbus/comp"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
@@ -25,12 +22,10 @@ type ModbusDriver struct {
 }
 
 const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
-const ADD_IR_FACT_MODEL = 49804
-const ADD_HR_FACT_SERIAL_NUMBER = 61440
-const ADD_HR_FACT_SERIAL_ID = 61450
-const LEN_IR_FACT_MODEL = 2
-const LEN_HR_FACT_SERIAL_NUMBER = 7
-const LEN_HR_FACT_SERIAL_ID = 2
+const addIrFactModel = 49804
+const addHrFactSerialNumber = 61440
+const lenIrFactModel = 2
+const lenHrFactSerialNumber = 7
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
@@ -144,66 +139,19 @@ func (m *ModbusDriver) Stop(force bool) error {
 // which may be added to the device service based on service
 // config. This function may also optionally trigger sensor
 // discovery, which could result in dynamic device profile creation.
-func (m *ModbusDriver) Discover() (interface{}, error) {
+func (m *ModbusDriver) Discover() error {
 	var err error
-	var modbusDevice *ModbusDevice
-	var readConf modbusReadConfig
-	var data []byte
-	var resp [8][2]string
+	var disc [8]discover
 
-	rtu := map[string]string{
-		"Address":  comp.SerialAddress,
-		"BaudRate": "115200",
-		"DataBits": "8",
-		"StopBits": "1",
-		"Parity":   "N",
-	}
-	proto := map[string]map[string]string{
-		"ModbusRTU": rtu,
-	}
-
-	/*Send query to 8 possibles modules*/
 	for i := 0; i < 8; i++ {
-		rtu["UnitID"] = strconv.Itoa(i + 1)
-		proto["ModbusRTU"] = rtu
-
-		readConf.function = modbusInputRegister
-		readConf.address = ADD_IR_FACT_MODEL
-		readConf.size = LEN_IR_FACT_MODEL
-
-		modbusDevice, err = getClient(proto)
+		disc[i], err = discoverScan(i)
 		if err != nil {
-			m.lc.Warn(fmt.Sprintf("Error connecting with Modbus in Discover process: %v", err))
-			releaseClient(modbusDevice)
-			return resp, err
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning modules: %v", err))
 		}
-		data, err = readModbus(modbusDevice.client, readConf)
+		err = discoverAssign(disc[i])
 		if err != nil {
-			m.lc.Debug(fmt.Sprintf("Error reading Modbus data in Discover process: %v", err))
-			if strings.Contains(err.Error(), "timeout") {
-				resp[i][0] = "Empt"
-			} else if strings.Contains(err.Error(), "illegal data address") {
-				resp[i][0] = "IlAd"
-			} else {
-				resp[i][0] = " Err"
-			}
-			resp[i][1] = ""
-		} else {
-			resp[i][0] = string(data[:])
-
-			readConf.function = modbusHoldingRegister
-			readConf.address = ADD_HR_FACT_SERIAL_NUMBER
-			readConf.size = LEN_HR_FACT_SERIAL_NUMBER
-			data, err = readModbus(modbusDevice.client, readConf)
-			if err != nil {
-				m.lc.Debug(fmt.Sprintf("Error reading Modbus data in Discover process: %v", err))
-				resp[i][1] = "Error"
-			} else {
-				resp[i][1] = string(data[:])
-			}
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging modules: %v", err))
 		}
-		releaseClient(modbusDevice)
 	}
-
-	return resp, nil
+	return err
 }

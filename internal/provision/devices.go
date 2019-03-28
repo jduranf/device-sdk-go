@@ -26,7 +26,7 @@ func LoadDevices(deviceList []common.DeviceConfig) error {
 			continue
 		} else {
 			common.LoggingClient.Debug(fmt.Sprintf("Device %s doesn't exist, creating a new one", d.Name))
-			err := createDevice(d)
+			err := CreateDevice(d)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("creating Device from config failed: %v", d))
 				return err
@@ -36,7 +36,7 @@ func LoadDevices(deviceList []common.DeviceConfig) error {
 	return nil
 }
 
-func createDevice(dc common.DeviceConfig) error {
+func CreateDevice(dc common.DeviceConfig) error {
 	prf, ok := cache.Profiles().ForName(dc.Profile)
 	if !ok {
 		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %v", dc.Profile, dc)

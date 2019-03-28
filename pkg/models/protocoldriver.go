@@ -53,5 +53,5 @@ type ProtocolDriver interface {
 	// which may be added to the device service based on service
 	// config. This function may also optionally trigger sensor
 	// discovery, which could result in dynamic device profile creation.
-	Discover() (devices interface{}, err error)
+	Discover() (err error)
 }

@@ -23,8 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/example/device-modbus/comp"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/goburrow/modbus"
@@ -65,6 +67,11 @@ type modbusReadConfig struct {
 	isByteSwap bool
 	isWordSwap bool
 	resultType string
+}
+
+type discover struct {
+	protocols   map[string]map[string]string
+	identifiers map[string]string
 }
 
 var (
@@ -685,4 +692,93 @@ func updateOperatingState(m *ModbusDriver, e error, deviceName string) {
 	} else {
 		ioutil.WriteFile(gpioSlavesRedLed, []byte("1"), 0644)
 	}
+}
+
+func discoverScan(i int) (discover, error) {
+	var disc discover
+	var err error
+
+	var modbusDevice *ModbusDevice
+	var readConf modbusReadConfig
+	var data []byte
+	dev := map[string]string{}
+
+	rtu := map[string]string{
+		"Address":  comp.SerialAddress,
+		"BaudRate": "115200",
+		"DataBits": "8",
+		"StopBits": "1",
+		"Parity":   "N",
+		"UnitID":   strconv.Itoa(i + 1),
+	}
+	disc.protocols = map[string]map[string]string{
+		"ModbusRTU": rtu,
+	}
+	/*Send query to modules*/
+	readConf.function = modbusInputRegister
+	readConf.address = addIrFactModel
+	readConf.size = lenIrFactModel
+
+	modbusDevice, err = getClient(disc.protocols)
+	if err != nil {
+		releaseClient(modbusDevice)
+		return disc, err
+	}
+	data, err = readModbus(modbusDevice.client, readConf)
+	if err != nil {
+		if strings.Contains(err.Error(), "timeout") {
+			dev["Model"] = "Empty"
+		} else if strings.Contains(err.Error(), "illegal data address") {
+			dev["Model"] = "Illegal Address"
+		} else {
+			dev["Model"] = "Comm Error"
+		}
+		dev["SerialNum"] = ""
+	} else {
+		dev["Model"] = string(data[:])
+
+		readConf.function = modbusHoldingRegister
+		readConf.address = addHrFactSerialNumber
+		readConf.size = lenHrFactSerialNumber
+		data, err = readModbus(modbusDevice.client, readConf)
+		if err != nil {
+			dev["SerialNum"] = "Error"
+		} else {
+			dev["SerialNum"] = string(data[:])
+		}
+	}
+	releaseClient(modbusDevice)
+
+	disc.identifiers = dev
+
+	return disc, nil
+}
+
+func discoverAssign(disc discover) error {
+	var deviceConf common.DeviceConfig
+
+	nameDevice := disc.identifiers["Model"] + disc.identifiers["SerialNum"]
+	_, ok := cache.Devices().ForName(nameDevice)
+	if ok {
+		errMsg := fmt.Sprintf("Device %s exist previously", nameDevice)
+		return fmt.Errorf(errMsg)
+	} else {
+		pw, ok := cache.Watchers().ForName(disc.identifiers["Model"])
+		if ok {
+			deviceConf.Name = nameDevice
+			deviceConf.Profile = pw.Profile.Name
+			//deviceConf.Description =
+			//deviceConf.Labels =
+			deviceConf.Protocols = disc.protocols
+			err := provision.CreateDevice(deviceConf)
+			if err != nil {
+				errMsg := fmt.Sprintf("creating Device %s failed", nameDevice)
+				return fmt.Errorf(errMsg)
+			}
+		} else {
+			errMsg := fmt.Sprintf("ProvisionWatcher %s doesn't exist for Device %s", disc.identifiers["Model"], nameDevice)
+			return fmt.Errorf(errMsg)
+		}
+	}
+	return nil
 }
