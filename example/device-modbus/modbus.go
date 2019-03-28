@@ -733,7 +733,7 @@ func discoverScan(i int) (discover, error) {
 		} else {
 			dev["Model"] = "Comm Error"
 		}
-		dev["SerialNum"] = ""
+		dev["SerialNum"] = "Null"
 	} else {
 		dev["Model"] = string(data[:])
 
@@ -757,7 +757,7 @@ func discoverScan(i int) (discover, error) {
 func discoverAssign(disc discover) error {
 	var deviceConf common.DeviceConfig
 
-	nameDevice := disc.identifiers["Model"] + disc.identifiers["SerialNum"]
+	nameDevice := disc.identifiers["Model"] + "_SN:" + disc.identifiers["SerialNum"]
 	_, ok := cache.Devices().ForName(nameDevice)
 	if ok {
 		errMsg := fmt.Sprintf("Device %s exist previously", nameDevice)

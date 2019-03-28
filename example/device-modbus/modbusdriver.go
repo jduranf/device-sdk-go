@@ -146,11 +146,11 @@ func (m *ModbusDriver) Discover() error {
 	for i := 0; i < 8; i++ {
 		disc[i], err = discoverScan(i)
 		if err != nil {
-			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning modules: %v", err))
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning module %v: %v", (i + 1), err))
 		}
 		err = discoverAssign(disc[i])
 		if err != nil {
-			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging modules: %v", err))
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging module %v: %v", (i + 1), err))
 		}
 	}
 	return err
