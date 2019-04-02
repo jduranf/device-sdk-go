@@ -22,10 +22,7 @@ type ModbusDriver struct {
 }
 
 const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
-const addIrFactModel = 49804
-const addHrFactSerialNumber = 61440
-const lenIrFactModel = 2
-const lenHrFactSerialNumber = 7
+const numToDiscover = 8
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
@@ -39,6 +36,7 @@ func (m *ModbusDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 	m.lc = lc
 	m.asyncCh = asyncCh
 	initModbusCache()
+	m.Discover()
 	return nil
 }
 
@@ -140,18 +138,16 @@ func (m *ModbusDriver) Stop(force bool) error {
 // config. This function may also optionally trigger sensor
 // discovery, which could result in dynamic device profile creation.
 func (m *ModbusDriver) Discover() error {
-	var err error
-	var disc [8]discover
-
-	for i := 0; i < 8; i++ {
-		disc[i], err = discoverScan(i)
+	for i := 0; i < numToDiscover; i++ {
+		disc, err := discoverScan(2 + i)
 		if err != nil {
-			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning module %v: %v", (i + 1), err))
-		}
-		err = discoverAssign(disc[i])
-		if err != nil {
-			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging module %v: %v", (i + 1), err))
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning module %v: %v", (2 + i), err))
+		} else {
+			err = discoverAssign(disc)
+			if err != nil {
+				m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging module %v: %v", (2 + i), err))
+			}
 		}
 	}
-	return err
+	return nil
 }

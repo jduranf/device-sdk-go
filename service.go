@@ -24,7 +24,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -117,8 +116,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	// TODO: call ListenAndServe in a goroutine
 
 	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
-
-	handler.DiscoveryHandler(nil)
 
 	go func() {
 		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r)

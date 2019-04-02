@@ -16,5 +16,5 @@ type ProtocolDiscovery interface {
 	// discovery, which could result in dynamic device profile creation.
 	//
 	// TODO: add models.ScanList (or define locally) for devices
-	//Discover() (devices *interface{}, err error)
+	Discover() (devices *interface{}, err error)
 }

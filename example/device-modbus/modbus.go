@@ -43,6 +43,11 @@ const (
 	comTimeout = 2000
 )
 
+const addIrFactModel = 49804
+const addHrFactSerialNumber = 61440
+const lenIrFactModel = 2
+const lenHrFactSerialNumber = 7
+
 type ModbusDevice struct {
 	tcpHandler *modbus.TCPClientHandler
 	rtuHandler *modbus.RTUClientHandler
@@ -69,7 +74,7 @@ type modbusReadConfig struct {
 	resultType string
 }
 
-type discover struct {
+type discoverResult struct {
 	protocols   map[string]map[string]string
 	identifiers map[string]string
 }
@@ -694,59 +699,50 @@ func updateOperatingState(m *ModbusDriver, e error, deviceName string) {
 	}
 }
 
-func discoverScan(i int) (discover, error) {
-	var disc discover
-	var err error
+func discoverScan(address int) (discoverResult, error) {
+	var disc discoverResult
 
-	var modbusDevice *ModbusDevice
-	var readConf modbusReadConfig
-	var data []byte
 	dev := map[string]string{}
-
 	rtu := map[string]string{
 		"Address":  comp.SerialAddress,
 		"BaudRate": "115200",
 		"DataBits": "8",
 		"StopBits": "1",
 		"Parity":   "N",
-		"UnitID":   strconv.Itoa(i + 1),
+		"UnitID":   strconv.Itoa(address),
 	}
 	disc.protocols = map[string]map[string]string{
 		"ModbusRTU": rtu,
 	}
-	/*Send query to modules*/
-	readConf.function = modbusInputRegister
-	readConf.address = addIrFactModel
-	readConf.size = lenIrFactModel
 
-	modbusDevice, err = getClient(disc.protocols)
+	modbusDevice, err := getClient(disc.protocols)
 	if err != nil {
 		releaseClient(modbusDevice)
 		return disc, err
 	}
+
+	// Get device model
+	var readConf modbusReadConfig
+	readConf.function = modbusInputRegister
+	readConf.address = addIrFactModel
+	readConf.size = lenIrFactModel
+	var data []byte
 	data, err = readModbus(modbusDevice.client, readConf)
 	if err != nil {
-		if strings.Contains(err.Error(), "timeout") {
-			dev["Model"] = "Empty"
-		} else if strings.Contains(err.Error(), "illegal data address") {
-			dev["Model"] = "Illegal Address"
-		} else {
-			dev["Model"] = "Comm Error"
-		}
-		dev["SerialNum"] = "Null"
-	} else {
-		dev["Model"] = string(data[:])
-
-		readConf.function = modbusHoldingRegister
-		readConf.address = addHrFactSerialNumber
-		readConf.size = lenHrFactSerialNumber
-		data, err = readModbus(modbusDevice.client, readConf)
-		if err != nil {
-			dev["SerialNum"] = "Error"
-		} else {
-			dev["SerialNum"] = string(data[:])
-		}
+		return disc, err
 	}
+	dev["Model"] = string(data[:])
+
+	// Get device serial number
+	readConf.function = modbusHoldingRegister
+	readConf.address = addHrFactSerialNumber
+	readConf.size = lenHrFactSerialNumber
+	data, err = readModbus(modbusDevice.client, readConf)
+	if err != nil {
+		return disc, err
+	}
+	dev["SerialNum"] = string(data[:])
+
 	releaseClient(modbusDevice)
 
 	disc.identifiers = dev
@@ -754,31 +750,31 @@ func discoverScan(i int) (discover, error) {
 	return disc, nil
 }
 
-func discoverAssign(disc discover) error {
-	var deviceConf common.DeviceConfig
-
+func discoverAssign(disc discoverResult) error {
+	// Check if device already exist
 	nameDevice := disc.identifiers["Model"] + "_SN:" + disc.identifiers["SerialNum"]
 	_, ok := cache.Devices().ForName(nameDevice)
 	if ok {
-		errMsg := fmt.Sprintf("Device %s exist previously", nameDevice)
-		return fmt.Errorf(errMsg)
-	} else {
-		pw, ok := cache.Watchers().ForName(disc.identifiers["Model"])
-		if ok {
-			deviceConf.Name = nameDevice
-			deviceConf.Profile = pw.Profile.Name
-			//deviceConf.Description =
-			//deviceConf.Labels =
-			deviceConf.Protocols = disc.protocols
-			err := provision.CreateDevice(deviceConf)
-			if err != nil {
-				errMsg := fmt.Sprintf("creating Device %s failed", nameDevice)
-				return fmt.Errorf(errMsg)
-			}
-		} else {
-			errMsg := fmt.Sprintf("ProvisionWatcher %s doesn't exist for Device %s", disc.identifiers["Model"], nameDevice)
-			return fmt.Errorf(errMsg)
-		}
+		return nil
 	}
+
+	// Search provision watcher
+	pw, ok := cache.Watchers().ForName(disc.identifiers["Model"])
+	if !ok {
+		errMsg := fmt.Sprintf("ProvisionWatcher %s doesn't exist for Device %s", disc.identifiers["Model"], nameDevice)
+		return fmt.Errorf(errMsg)
+	}
+
+	// Add device
+	var deviceConf common.DeviceConfig
+	deviceConf.Name = nameDevice
+	deviceConf.Profile = pw.Profile.Name
+	deviceConf.Protocols = disc.protocols
+	err := provision.CreateDevice(deviceConf)
+	if err != nil {
+		errMsg := fmt.Sprintf("creating Device %s failed", nameDevice)
+		return fmt.Errorf(errMsg)
+	}
+
 	return nil
 }
