@@ -23,8 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/example/device-modbus/comp"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/goburrow/modbus"
@@ -35,11 +37,19 @@ const (
 	modbusHoldingRegister = "HoldingRegister"
 	modbusInputRegister   = "InputRegister"
 	modbusCoil            = "Coil"
+	modbusDiscreteInput   = "DiscreteInput"
 )
 
 const (
 	comTimeout = 2000
 )
+
+const addIrFactModel = 49804
+const addHrFactSerialNumber = 61440
+const lenIrFactModel = 2
+const lenHrFactSerialNumber = 7
+
+const maxPrecision = 6
 
 type ModbusDevice struct {
 	tcpHandler *modbus.TCPClientHandler
@@ -65,6 +75,12 @@ type modbusReadConfig struct {
 	isByteSwap bool
 	isWordSwap bool
 	resultType string
+	precision  int
+}
+
+type discoverResult struct {
+	protocols   map[string]map[string]string
+	identifiers map[string]string
 }
 
 var (
@@ -189,12 +205,12 @@ func getTCPConfig(protocol map[string]string) (url string, err error) {
 func getRTUConfig(protocol map[string]string) (config rtuConfig, err error) {
 
 	// Get serial port
-	serialPort, ok := protocol["SerialPort"]
+	address, ok := protocol["Address"]
 	if !ok {
-		err = fmt.Errorf("Serial port not defined")
+		err = fmt.Errorf("Address not defined")
 		return
 	}
-	config.address = serialPort
+	config.address = address
 
 	// Get baudrate
 	baudRate, ok := protocol["BaudRate"]
@@ -251,22 +267,22 @@ func getRTUConfig(protocol map[string]string) (config rtuConfig, err error) {
 	}
 	config.parity = parity
 
-	// Get slave ID
-	slaveID, ok := protocol["SlaveID"]
+	// Get unit ID
+	unitID, ok := protocol["UnitID"]
 	if !ok {
-		err = fmt.Errorf("Slave ID not defined")
+		err = fmt.Errorf("Unit ID not defined")
 		return
 	}
-	slave, err := strconv.Atoi(slaveID)
+	unit, err := strconv.Atoi(unitID)
 	if err != nil {
-		err = fmt.Errorf("Invalid slave ID value: %v", err)
+		err = fmt.Errorf("Invalid unit ID value: %v", err)
 		return
 	}
-	if (slave == 0) || (slave > 247) {
-		err = fmt.Errorf("Invalid slave ID value: %d", slave)
+	if (unit == 0) || (unit > 247) {
+		err = fmt.Errorf("Invalid unit ID value: %d", unit)
 		return
 	}
-	config.slaveID = byte(slave)
+	config.slaveID = byte(unit)
 
 	return
 }
@@ -313,7 +329,7 @@ func getReadValues(dr *models.DeviceResource) (readConfig modbusReadConfig, err 
 		return
 	}
 	readConfig.function = dr.Attributes["PrimaryTable"].(string)
-	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" {
+	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" && readConfig.function != "DiscreteInput" {
 		err = fmt.Errorf("Invalid attribute: %v", dr.Attributes)
 		return
 	}
@@ -378,6 +394,17 @@ func getReadValues(dr *models.DeviceResource) (readConfig modbusReadConfig, err 
 	if dr.Properties.Value.Type == "Bool" || dr.Properties.Value.Type == "String" || dr.Properties.Value.Type == "Integer" ||
 		dr.Properties.Value.Type == "Float" || dr.Properties.Value.Type == "Json" {
 		readConfig.resultType = dr.Properties.Value.Type
+
+		if dr.Properties.Value.Type == "Float" {
+			if dr.Properties.Value.Precision != "" {
+				readConfig.precision, err = strconv.Atoi(dr.Properties.Value.Precision)
+				if err != nil {
+					readConfig.precision = maxPrecision
+				}
+			} else {
+				readConfig.precision = maxPrecision
+			}
+		}
 	} else {
 		err = fmt.Errorf("Invalid resultType: %v", dr.Properties.Value.Type)
 		return
@@ -392,6 +419,8 @@ func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, erro
 		return client.ReadInputRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusCoil {
 		return client.ReadCoils(readConfig.address, readConfig.size)
+	} else if readConfig.function == modbusDiscreteInput {
+		return client.ReadDiscreteInputs(readConfig.address, readConfig.size)
 	}
 
 	err := fmt.Errorf("Invalid read function: %s", readConfig.function)
@@ -402,7 +431,13 @@ func writeModbus(client modbus.Client, readConfig modbusReadConfig, value []byte
 	if readConfig.function == modbusHoldingRegister || readConfig.function == modbusInputRegister {
 		return client.WriteMultipleRegisters(readConfig.address, readConfig.size, value)
 	} else if readConfig.function == modbusCoil {
-		return client.WriteSingleCoil(readConfig.address, binary.LittleEndian.Uint16(value))
+		var val uint16
+		if uint16(value[0]) != 0 {
+			val = 0xFF00
+		} else {
+			val = 0
+		}
+		return client.WriteSingleCoil(readConfig.address, val)
 	}
 
 	err := fmt.Errorf("Invalid write function: %s", readConfig.function)
@@ -488,6 +523,8 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 		}
 	} else if readConf.resultType == "Float" {
 		if difType == "Float" {
+			output := math.Pow(10, float64(readConf.precision))
+			valueFloat = float64(math.Round(valueFloat*output)) / output
 			result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
 		} else if difType == "Int" {
 			result, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
@@ -528,7 +565,7 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 			}
 		}
 	} else if writeConf.resultType == "Bool" {
-		data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+		data = param.NumericValue
 	} else if writeConf.resultType == "Json" {
 		//TODO:JSon case
 	} else if writeConf.resultType == "Integer" {
@@ -685,4 +722,86 @@ func updateOperatingState(m *ModbusDriver, e error, deviceName string) {
 	} else {
 		ioutil.WriteFile(gpioSlavesRedLed, []byte("1"), 0644)
 	}
+}
+
+func discoverScan(address int) (discoverResult, error) {
+	var disc discoverResult
+
+	dev := map[string]string{}
+	rtu := map[string]string{
+		"Address":  comp.SerialAddress,
+		"BaudRate": "115200",
+		"DataBits": "8",
+		"StopBits": "1",
+		"Parity":   "N",
+		"UnitID":   strconv.Itoa(address),
+	}
+	disc.protocols = map[string]map[string]string{
+		"ModbusRTU": rtu,
+	}
+
+	modbusDevice, err := getClient(disc.protocols)
+	if err != nil {
+		releaseClient(modbusDevice)
+		return disc, err
+	}
+
+	// Get device model
+	var readConf modbusReadConfig
+	readConf.function = modbusInputRegister
+	readConf.address = addIrFactModel
+	readConf.size = lenIrFactModel
+	var data []byte
+	data, err = readModbus(modbusDevice.client, readConf)
+	if err != nil {
+		releaseClient(modbusDevice)
+		return disc, err
+	}
+	dev["Model"] = string(data[:])
+
+	// Get device serial number
+	readConf.function = modbusHoldingRegister
+	readConf.address = addHrFactSerialNumber
+	readConf.size = lenHrFactSerialNumber
+	data, err = readModbus(modbusDevice.client, readConf)
+	if err != nil {
+		releaseClient(modbusDevice)
+		return disc, err
+	}
+	dev["SerialNum"] = string(data[:])
+
+	releaseClient(modbusDevice)
+
+	disc.identifiers = dev
+
+	return disc, nil
+}
+
+func discoverAssign(disc discoverResult) error {
+	// Check if device already exist
+	nameDevice := disc.identifiers["Model"] + "_SN:" + disc.identifiers["SerialNum"]
+	_, ok := cache.Devices().ForName(nameDevice)
+	if ok {
+		return nil
+	}
+
+	// Search provision watcher
+	pw, ok := cache.Watchers().ForName(disc.identifiers["Model"])
+	if !ok {
+		errMsg := fmt.Sprintf("ProvisionWatcher %s doesn't exist for Device %s", disc.identifiers["Model"], nameDevice)
+		return fmt.Errorf(errMsg)
+	}
+
+	// Add device
+	var deviceConf common.DeviceConfig
+	deviceConf.Name = nameDevice
+	deviceConf.Profile = pw.Profile.Name
+	deviceConf.Protocols = disc.protocols
+	err := provision.CreateDevice(deviceConf)
+	if err != nil {
+		errMsg := fmt.Sprintf("creating Device %s failed", nameDevice)
+		return fmt.Errorf(errMsg)
+	}
+
+	return nil
 }

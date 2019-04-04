@@ -1,0 +1,224 @@
+# Copyright 2019 Circutor. All rights reserved.
+name: "ModuleMAIO"
+manufacturer: "Circutor"
+model: "CVM-D-MAIO"
+description: "Module analog inputs/outputs"
+labels: []
+deviceResources:
+    -
+        name: SerialNumber
+        description: "Factory Device Serial Number"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61440", ValueType: "STRING", Length: "7", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: FirmwareVersion
+        description: "Firmware Version"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "ARRAY", Length: "3", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: ValueAnalogOutput1mV
+        description: "Target value for AO1 in mV"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15000", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "mV" }
+    -
+        name: ValueAnalogOutput2mV
+        description: "Target value for AO2 in mV"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15001", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "mV" }
+    -
+        name: ValueAnalogOutput3mV
+        description: "Target value for AO3 in mV"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15002", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "mV" }
+    -
+        name: ValueAnalogOutput4mV
+        description: "Target value for AO4 in mV"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15003", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "mV" }
+    -
+        name: ValueAnalogOutput1uA
+        description: "Target value for AO1 in uA"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15020", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogOutput2uA
+        description: "Target value for AO2 in uA"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15021", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogOutput3uA
+        description: "Target value for AO3 in uA"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15022", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogOutput4uA
+        description: "Target value for AO4 in uA"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "15023", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "RW", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogInput1uA
+        description: "Measured value for AI1 in uA"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "5040", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogInput2uA
+        description: "Measured value for AI2 in uA"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "5042", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogInput3uA
+        description: "Measured value for AI3 in uA"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "5044", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+    -
+        name: ValueAnalogInput4uA
+        description: "Measured value for AI4 in uA"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "5046", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R", scale: "1" }
+            units:
+                { type: "String", defaultValue: "uA" }
+
+resources:
+    -
+        name: SerialNumber
+        get:
+          - { object: "SerialNumber", parameter: "SerialNumber" }
+    -
+        name: FirmwareVersion
+        get:
+          - { object: "FirmwareVersion", parameter: "FirmwareVersion" }
+    -
+        name: ValueAnalogOutput1mV
+        get:
+          - { object: "ValueAnalogOutput1mV", parameter: "ValueAnalogOutput1mV" }
+        set:
+          - { object: "ValueAnalogOutput1mV", parameter: "ValueAnalogOutput1mV" }
+    -
+        name: ValueAnalogOutput2mV
+        get:
+          - { object: "ValueAnalogOutput2mV", parameter: "ValueAnalogOutput2mV" }
+        set:
+          - { object: "ValueAnalogOutput2mV", parameter: "ValueAnalogOutput2mV" }
+    -
+        name: ValueAnalogOutput3mV
+        get:
+          - { object: "ValueAnalogOutput3mV", parameter: "ValueAnalogOutput3mV" }
+        set:
+          - { object: "ValueAnalogOutput3mV", parameter: "ValueAnalogOutput3mV" }
+    -
+        name: ValueAnalogOutput4mV
+        get:
+          - { object: "ValueAnalogOutput4mV", parameter: "ValueAnalogOutput4mV" }
+        set:
+          - { object: "ValueAnalogOutput4mV", parameter: "ValueAnalogOutput4mV" }
+    -
+        name: ValueAnalogOutput1uA
+        get:
+          - { object: "ValueAnalogOutput1uA", parameter: "ValueAnalogOutput1uA" }
+        set:
+          - { object: "ValueAnalogOutput1uA", parameter: "ValueAnalogOutput1uA" }
+    -
+        name: ValueAnalogOutput2uA
+        get:
+          - { object: "ValueAnalogOutput2uA", parameter: "ValueAnalogOutput2uA" }
+        set:
+          - { object: "ValueAnalogOutput2uA", parameter: "ValueAnalogOutput2uA" }
+    -
+        name: ValueAnalogOutput3uA
+        get:
+          - { object: "ValueAnalogOutput3uA", parameter: "ValueAnalogOutput3uA" }
+        set:
+          - { object: "ValueAnalogOutput3uA", parameter: "ValueAnalogOutput3uA" }
+    -
+        name: ValueAnalogOutput4uA
+        get:
+          - { object: "ValueAnalogOutput4uA", parameter: "ValueAnalogOutput4uA" }
+        set:
+          - { object: "ValueAnalogOutput4uA", parameter: "ValueAnalogOutput4uA" }
+    -
+        name: ValueAnalogInput1uA
+        get:
+          - { object: "ValueAnalogInput1uA", parameter: "ValueAnalogInput1uA" }
+    -
+        name: ValueAnalogInput2uA
+        get:
+          - { object: "ValueAnalogInput2uA", parameter: "ValueAnalogInput2uA" }
+    -
+        name: ValueAnalogInput3uA
+        get:
+          - { object: "ValueAnalogInput3uA", parameter: "ValueAnalogInput3uA" }
+    -
+        name: ValueAnalogInput4uA
+        get:
+          - { object: "ValueAnalogInput4uA", parameter: "ValueAnalogInput4uA" }
+    -
+        name: ValueAnalogInputs
+        get:
+          - { object: "ValueAnalogInput1uA", parameter: "ValueAnalogInput1uA" }
+          - { object: "ValueAnalogInput2uA", parameter: "ValueAnalogInput2uA" }
+          - { object: "ValueAnalogInput3uA", parameter: "ValueAnalogInput3uA" }
+          - { object: "ValueAnalogInput4uA", parameter: "ValueAnalogInput4uA" }

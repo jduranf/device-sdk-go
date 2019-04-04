@@ -1,0 +1,679 @@
+# Copyright 2019 Circutor. All rights reserved.
+name: "ModuleCVMD"
+manufacturer: "Circutor"
+model: "CVM-D"
+description: "CVM-D like Module CVM-D"
+labels: []
+deviceResources:
+    -
+        name: SerialNumber
+        description: "Factory Device Serial Number"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61440", ValueType: "STRING", Length: "7", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: FirmwareVersion
+        description: "Firmware Version"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "ARRAY", Length: "3", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: VoltageL1
+        description: "Voltage Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "0", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R", precision: "2" }
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: CurrentL1
+        description: "Current Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "2", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "3"}
+            units:
+                { type: "String", defaultValue: "A" }
+    -
+        name: ActivePowerL1
+        description: "Active Power Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "4", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "W" }
+    -
+        name: InductivePowerL1
+        description: "Inductive Power Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "6", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarL" }
+    -
+        name: CapacitivePowerL1
+        description: "Capacitive Power Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "8", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarC" }
+    -
+        name: ApparentPowerL1
+        description: "Apparent Power Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "10", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VA" }
+    -
+        name: PowerFactorL1
+        description: "Power Factor Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "12", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: CosPhiL1
+        description: "Cos Phi Phase 1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "14", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: VoltageL2
+        description: "Voltage Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "16", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: CurrentL2
+        description: "Current Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "18", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "3"}
+            units:
+                { type: "String", defaultValue: "A" }
+    -
+        name: ActivePowerL2
+        description: "Active Power Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "20", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "W" }
+    -
+        name: InductivePowerL2
+        description: "Inductive Power Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "22", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarL" }
+    -
+        name: CapacitivePowerL2
+        description: "Capacitive Power Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "24", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarC" }
+    -
+        name: ApparentPowerL2
+        description: "Apparent Power Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "26", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VA" }
+    -
+        name: PowerFactorL2
+        description: "Power Factor Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "28", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: CosPhiL2
+        description: "Cos Phi Phase 2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "30", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: VoltageL3
+        description: "Voltage Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "32", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: CurrentL3
+        description: "Current Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "34", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "3"}
+            units:
+                { type: "String", defaultValue: "A" }
+    -
+        name: ActivePowerL3
+        description: "Active Power Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "36", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "W" }
+    -
+        name: InductivePowerL3
+        description: "Inductive Power Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "38", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarL" }
+    -
+        name: CapacitivePowerL3
+        description: "Capacitive Power Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "40", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarC" }
+    -
+        name: ApparentPowerL3
+        description: "Apparent Power Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "42", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VA" }
+    -
+        name: PowerFactorL3
+        description: "Power Factor Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "44", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: CosPhiL3
+        description: "Cos Phi Phase 3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "46", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: Frequency
+        description: "Frequency"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "52", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "Hz" }
+    -
+        name: VoltageL1L2
+        description: "Voltage Ph-Ph L1-L2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "54", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: VoltageL2L3
+        description: "Voltage Ph-Ph L2-L3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "56", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: VoltageL3L1
+        description: "Voltage Ph-Ph L3-L1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "58", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: VoltagePhPhIII
+        description: "Voltage Phase-Phase ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "60", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: VoltagePhNIII
+        description: "Voltage Phase-Neutral ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "62", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "V" }
+    -
+        name: CurrentIII
+        description: "Current ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "64", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "3"}
+            units:
+                { type: "String", defaultValue: "A" }
+    -
+        name: ActivePowerIII
+        description: "Active Power ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "66", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "W" }
+    -
+        name: InductivePowerIII
+        description: "Inductive Power ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "68", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarL" }
+    -
+        name: CapacitivePowerIII
+        description: "Capacitive Power ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "70", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VarC" }
+    -
+        name: ApparentPowerIII
+        description: "Apparent Power ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "72", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "1"}
+            units:
+                { type: "String", defaultValue: "VA" }
+    -
+        name: PowerFactorIII
+        description: "Power Factor ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "74", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: CosPhiIII
+        description: "Cos Phi ThreePhasic"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "76", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+    -
+        name: THDV1
+        description: "THD Voltage L1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "78", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+    -
+        name: THDV2
+        description: "THD Voltage L2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "80", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+    -
+        name: THDV3
+        description: "THD Voltage L3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "82", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+    -
+        name: THDI1
+        description: "THD Current L1"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "86", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+    -
+        name: THDI2
+        description: "THD Current L2"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "88", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+    -
+        name: THDI3
+        description: "THD Current L3"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "90", ValueType: "FLOAT32", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Float", readWrite: "R" , precision: "2"}
+            units:
+                { type: "String", defaultValue: "%" }
+resources:
+    -
+        name: SerialNumber
+        get:
+          - { object: "SerialNumber", parameter: "SerialNumber" }
+    -
+        name: FirmwareVersion
+        get:
+          - { object: "FirmwareVersion", parameter: "FirmwareVersion" }
+    -
+        name: VoltageL1
+        get:
+          - { object: "VoltageL1", parameter: "VoltageL1" }
+    -
+        name: CurrentL1
+        get:
+          - { object: "CurrentL1", parameter: "CurrentL1" }
+    -
+        name: ActivePowerL1
+        get:
+          - { object: "ActivePowerL1", parameter: "ActivePowerL1" }
+    -
+        name: InductivePowerL1
+        get:
+          - { object: "InductivePowerL1", parameter: "InductivePowerL1" }
+    -
+        name: CapacitivePowerL1
+        get:
+          - { object: "CapacitivePowerL1", parameter: "CapacitivePowerL1" }
+    -
+        name: ApparentPowerL1
+        get:
+          - { object: "ApparentPowerL1", parameter: "ApparentPowerL1" }
+    -
+        name: PowerFactorL1
+        get:
+          - { object: "PowerFactorL1", parameter: "PowerFactorL1" }
+    -
+        name: CosPhiL1
+        get:
+          - { object: "CosPhiL1", parameter: "CosPhiL1" }
+    -
+        name: VoltageL2
+        get:
+          - { object: "VoltageL2", parameter: "VoltageL2" }
+    -
+        name: CurrentL2
+        get:
+          - { object: "CurrentL2", parameter: "CurrentL2" }
+    -
+        name: ActivePowerL2
+        get:
+          - { object: "ActivePowerL2", parameter: "ActivePowerL1" }
+    -
+        name: InductivePowerL2
+        get:
+          - { object: "InductivePowerL2", parameter: "InductivePowerL2" }
+    -
+        name: CapacitivePowerL2
+        get:
+          - { object: "CapacitivePowerL2", parameter: "CapacitivePowerL2" }
+    -
+        name: ApparentPowerL2
+        get:
+          - { object: "ApparentPowerL2", parameter: "ApparentPowerL2" }
+    -
+        name: PowerFactorL2
+        get:
+          - { object: "PowerFactorL2", parameter: "PowerFactorL2" }
+    -
+        name: CosPhiL2
+        get:
+          - { object: "CosPhiL2", parameter: "CosPhiL2" }
+    -
+        name: VoltageL3
+        get:
+          - { object: "VoltageL3", parameter: "VoltageL3" }
+    -
+        name: CurrentL3
+        get:
+          - { object: "CurrentL3", parameter: "CurrentL3" }
+    -
+        name: ActivePowerL3
+        get:
+          - { object: "ActivePowerL3", parameter: "ActivePowerL3" }
+    -
+        name: InductivePowerL3
+        get:
+          - { object: "InductivePowerL3", parameter: "InductivePowerL3" }
+    -
+        name: CapacitivePowerL3
+        get:
+          - { object: "CapacitivePowerL3", parameter: "CapacitivePowerL3" }
+    -
+        name: ApparentPowerL3
+        get:
+          - { object: "ApparentPowerL3", parameter: "ApparentPowerL3" }
+    -
+        name: PowerFactorL3
+        get:
+          - { object: "PowerFactorL3", parameter: "PowerFactorL3" }
+    -
+        name: CosPhiL3
+        get:
+          - { object: "CosPhiL3", parameter: "CosPhiL3" }
+    -
+        name: Frequency
+        get:
+          - { object: "Frequency", parameter: "Frequency" }
+    -
+        name: VoltageL1L2
+        get:
+          - { object: "VoltageL1L2", parameter: "VoltageL1L2" }
+    -
+        name: VoltageL2L3
+        get:
+          - { object: "VoltageL2L3", parameter: "VoltageL2L3" }
+    -
+        name: VoltageL3L1
+        get:
+          - { object: "VoltageL3L1", parameter: "VoltageL3L1" }
+    -
+        name: VoltagePhPhIII
+        get:
+          - { object: "VoltagePhPhIII", parameter: "VoltagePhPhIII" }
+    -
+        name: VoltagePhNIII
+        get:
+          - { object: "VoltagePhNIII", parameter: "VoltagePhNIII" }
+    -
+        name: CurrentIII
+        get:
+          - { object: "CurrentIII", parameter: "CurrentIII" }
+    -
+        name: ActivePowerIII
+        get:
+          - { object: "ActivePowerIII", parameter: "ActivePowerIII" }
+    -
+        name: InductivePowerIII
+        get:
+          - { object: "InductivePowerIII", parameter: "InductivePowerIII" }
+    -
+        name: CapacitivePowerIII
+        get:
+          - { object: "CapacitivePowerIII", parameter: "CapacitivePowerIII" }
+    -
+        name: ApparentPowerIII
+        get:
+          - { object: "ApparentPowerIII", parameter: "ApparentPowerIII" }
+    -
+        name: PowerFactorIII
+        get:
+          - { object: "PowerFactorIII", parameter: "PowerFactorIII" }
+    -
+        name: CosPhiIII
+        get:
+          - { object: "CosPhiIII", parameter: "CosPhiIII" }
+    -
+        name: THDV1
+        get:
+          - { object: "THDV1", parameter: "THDV1" }
+    -
+        name: THDV2
+        get:
+          - { object: "THDV2", parameter: "THDV2" }
+    -
+        name: THDV3
+        get:
+          - { object: "THDV3", parameter: "THDV3" }
+    -
+        name: THDI1
+        get:
+          - { object: "THDI1", parameter: "THDI1" }
+    -
+        name: THDI2
+        get:
+          - { object: "THDI2", parameter: "THDI2" }
+    -
+        name: THDI3
+        get:
+          - { object: "THDI3", parameter: "THDI3" }
+    -
+        name: MeasuresL1
+        get:
+          - { object: "VoltageL1", parameter: "VoltageL1" }
+          - { object: "CurrentL1", parameter: "CurrentL1" }
+          - { object: "ActivePowerL1", parameter: "ActivePowerL1" }
+          - { object: "InductivePowerL1", parameter: "InductivePowerL1" }
+          - { object: "CapacitivePowerL1", parameter: "CapacitivePowerL1" }
+          - { object: "ApparentPowerL1", parameter: "ApparentPowerL1" }
+          - { object: "PowerFactorL1", parameter: "PowerFactorL1" }
+          - { object: "CosPhiL1", parameter: "CosPhiL1" }
+    -
+        name: MeasuresL2
+        get:
+          - { object: "VoltageL2", parameter: "VoltageL2" }
+          - { object: "CurrentL2", parameter: "CurrentL2" }
+          - { object: "ActivePowerL2", parameter: "ActivePowerL2" }
+          - { object: "InductivePowerL2", parameter: "InductivePowerL2" }
+          - { object: "CapacitivePowerL2", parameter: "CapacitivePowerL2" }
+          - { object: "ApparentPowerL2", parameter: "ApparentPowerL2" }
+          - { object: "PowerFactorL2", parameter: "PowerFactorL2" }
+          - { object: "CosPhiL2", parameter: "CosPhiL2" }
+    -
+        name: MeasuresL3
+        get:
+          - { object: "VoltageL3", parameter: "VoltageL3" }
+          - { object: "CurrentL3", parameter: "CurrentL3" }
+          - { object: "ActivePowerL3", parameter: "ActivePowerL3" }
+          - { object: "InductivePowerL3", parameter: "InductivePowerL3" }
+          - { object: "CapacitivePowerL3", parameter: "CapacitivePowerL3" }
+          - { object: "ApparentPowerL3", parameter: "ApparentPowerL3" }
+          - { object: "PowerFactorL3", parameter: "PowerFactorL3" }
+          - { object: "CosPhiL3", parameter: "CosPhiL3" }
+    -
+        name: MeasuresIII
+        get:
+          - { object: "VoltagePhPhIII", parameter: "VoltagePhPhIII" }
+          - { object: "VoltagePhNIII", parameter: "VoltagePhNIII" }
+          - { object: "CurrentIII", parameter: "CurrentIII" }
+          - { object: "ActivePowerIII", parameter: "ActivePowerIII" }
+          - { object: "InductivePowerIII", parameter: "InductivePowerIII" }
+          - { object: "CapacitivePowerIII", parameter: "CapacitivePowerIII" }
+          - { object: "ApparentPowerIII", parameter: "ApparentPowerIII" }
+          - { object: "PowerFactorIII", parameter: "PowerFactorIII" }
+          - { object: "CosPhiIII", parameter: "CosPhiIII" }
+    -
+        name: MeasuresExtra
+        get:
+          - { object: "VoltageL1L2", parameter: "VoltageL1L2" }
+          - { object: "VoltageL2L3", parameter: "VoltageL2L3" }
+          - { object: "VoltageL3L1", parameter: "VoltageL3L1" }
+          - { object: "Frequency", parameter: "Frequency" }
+    -
+        name: THDs
+        get:
+          - { object: "THDV1", parameter: "THDV1" }
+          - { object: "THDV2", parameter: "THDV2" }
+          - { object: "THDV3", parameter: "THDV3" }
+          - { object: "THDI1", parameter: "THDI1" }
+          - { object: "THDI2", parameter: "THDI2" }
+          - { object: "THDI3", parameter: "THDI3" }

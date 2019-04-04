@@ -22,6 +22,7 @@ type ModbusDriver struct {
 }
 
 const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
+const numToDiscover = 7
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
@@ -35,6 +36,7 @@ func (m *ModbusDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 	m.lc = lc
 	m.asyncCh = asyncCh
 	initModbusCache()
+	m.Discover()
 	return nil
 }
 
@@ -127,5 +129,25 @@ func (m *ModbusDriver) HandleWriteCommands(deviceName string, protocols map[stri
 // readings (if supported).
 func (m *ModbusDriver) Stop(force bool) error {
 	m.lc.Debug(fmt.Sprintf("ModbusDriver.Stop called: force=%v", force))
+	return nil
+}
+
+// Discover triggers protocol specific device discovery, which is
+// a synchronous operation which returns a list of new devices
+// which may be added to the device service based on service
+// config. This function may also optionally trigger sensor
+// discovery, which could result in dynamic device profile creation.
+func (m *ModbusDriver) Discover() error {
+	for i := 0; i < numToDiscover; i++ {
+		disc, err := discoverScan(2 + i)
+		if err != nil {
+			m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error scanning module %v: %v", (2 + i), err))
+		} else {
+			err = discoverAssign(disc)
+			if err != nil {
+				m.lc.Error(fmt.Sprintf("ModbusDriver.Discover Error assinging module %v: %v", (2 + i), err))
+			}
+		}
+	}
 	return nil
 }

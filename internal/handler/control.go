@@ -13,6 +13,9 @@ import (
 )
 
 func DiscoveryHandler(requestMap map[string]string) {
+
+	common.Driver.Discover()
+
 	common.LoggingClient.Info(fmt.Sprintf("service: discovery request"))
 }
 

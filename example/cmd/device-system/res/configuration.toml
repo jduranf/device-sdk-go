@@ -52,12 +52,14 @@ EnableRemote = true
 File = "./device-modbus.log"
 Level = "INFO"
 
+# Pre-define Devices
 [[DeviceList]]
   Name = "device-system"
   Profile = "system-profile"
   Description = "EDS sytem device"
   Labels = [ "EDS", "system" ]
-  [DeviceList.Addressable]
-    Address = "localhost"
-    Port = 49999
-    Protocol = "http"
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.other]
+      Address = "localhost"
+      Port = "49999"
+

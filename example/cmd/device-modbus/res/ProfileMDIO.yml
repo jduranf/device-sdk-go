@@ -1,0 +1,143 @@
+# Copyright 2019 Circutor. All rights reserved.
+name: "ModuleMDIO"
+manufacturer: "Circutor"
+model: "CVM-D-MDIO"
+description: "Module digital inputs/outputs"
+labels: []
+deviceResources:
+    -
+        name: SerialNumber
+        description: "Factory Device Serial Number"
+        attributes:
+            { PrimaryTable: "HoldingRegister", StartingAddress: "61440", ValueType: "STRING", Length: "7", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: FirmwareVersion
+        description: "Firmware Version"
+        attributes:
+            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "ARRAY", Length: "3", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "String", readWrite: "R" }
+    -
+        name: StateDigitalOutput1
+        description: "State of Digital Ouput 1"
+        attributes:
+            { PrimaryTable: "Coil", StartingAddress: "2000", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "RW" }
+    -
+        name: StateDigitalOutput2
+        description: "State of Digital Ouput 2"
+        attributes:
+            { PrimaryTable: "Coil", StartingAddress: "2001", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "RW" }
+    -
+        name: StateDigitalOutput3
+        description: "State of Digital Ouput 3"
+        attributes:
+            { PrimaryTable: "Coil", StartingAddress: "2002", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "RW" }
+    -
+        name: StateDigitalOutput4
+        description: "State of Digital Ouput 4"
+        attributes:
+            { PrimaryTable: "Coil", StartingAddress: "2003", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "RW" }
+    -
+        name: StateDigitalInput1
+        description: "State of Digital Input 1"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "0", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
+    -
+        name: StateDigitalInput2
+        description: "State of Digital Input 2"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "1", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
+    -
+        name: StateDigitalInput3
+        description: "State of Digital Input 3"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "2", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
+    -
+        name: StateDigitalInput4
+        description: "State of Digital Input 4"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "3", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
+resources:
+    -
+        name: SerialNumber
+        get:
+          - { object: "SerialNumber", parameter: "SerialNumber" }
+    -
+        name: FirmwareVersion
+        get:
+          - { object: "FirmwareVersion", parameter: "FirmwareVersion" }
+    -
+        name: StateDigitalOutput1
+        get:
+          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
+        set:
+          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
+    -
+        name: StateDigitalOutput2
+        get:
+          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
+        set:
+          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
+    -
+        name: StateDigitalOutput3
+        get:
+          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
+        set:
+          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
+    -
+        name: StateDigitalOutput4
+        get:
+          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
+        set:
+          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
+    -
+        name: StateDigitalInput1
+        get:
+          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
+    -
+        name: StateDigitalInput2
+        get:
+          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
+    -
+        name: StateDigitalInput3
+        get:
+          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
+    -
+        name: StateDigitalInput4
+        get:
+          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }
+    -
+        name: StateDigitalInputs
+        get:
+          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
+          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
+          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
+          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }

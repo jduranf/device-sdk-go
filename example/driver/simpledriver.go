@@ -90,3 +90,14 @@ func (s *SimpleDriver) Stop(force bool) error {
 	s.lc.Debug(fmt.Sprintf("SimpleDriver.Stop called: force=%v", force))
 	return nil
 }
+
+// Discover triggers protocol specific device discovery, which is
+// a synchronous operation which returns a list of new devices
+// which may be added to the device service based on service
+// config. This function may also optionally trigger sensor
+// discovery, which could result in dynamic device profile creation.
+func (s *SimpleDriver) Discover() error {
+	s.lc.Debug(fmt.Sprintf("SimpleDriver.Discover called"))
+	err := fmt.Errorf("SimpleDriver.Discover unimplemented")
+	return err
+}

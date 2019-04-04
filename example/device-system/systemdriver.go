@@ -154,6 +154,17 @@ func (sys *SystemDriver) Stop(force bool) error {
 	return nil
 }
 
+// Discover triggers protocol specific device discovery, which is
+// a synchronous operation which returns a list of new devices
+// which may be added to the device service based on service
+// config. This function may also optionally trigger sensor
+// discovery, which could result in dynamic device profile creation.
+func (sys *SystemDriver) Discover() error {
+	sys.lc.Debug(fmt.Sprintf("SystemDriver.Discover called"))
+	err := fmt.Errorf("SystemDriver.Discover unimplemented")
+	return err
+}
+
 func getValue(request string) (value uint64, err error) {
 	if request == "RamUsage" {
 		info := syscall.Sysinfo_t{}
