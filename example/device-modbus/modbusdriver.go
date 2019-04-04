@@ -22,7 +22,7 @@ type ModbusDriver struct {
 }
 
 const gpioSlavesRedLed = "/sys/class/leds/slaves_red_led/brightness"
-const numToDiscover = 8
+const numToDiscover = 7
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.

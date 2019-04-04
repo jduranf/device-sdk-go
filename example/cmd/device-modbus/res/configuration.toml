@@ -60,7 +60,25 @@ Key = "Model"
 MatchString = "CAIO"
 
 [[Watchers]]
-Name = "MDIO"
+Name = "TDIO"
 Profile = "ModuleMDIO"
 Key = "Model"
-MatchString = "MDIO"
+MatchString = "TDIO"
+
+[[Watchers]]
+Name = "RDIO"
+Profile = "ModuleMDIO"
+Key = "Model"
+MatchString = "RDIO"
+
+[[Watchers]]
+Name = "VDIO"
+Profile = "ModuleMDIO"
+Key = "Model"
+MatchString = "VDIO"
+
+[[Watchers]]
+Name = "CVMD"
+Profile = "ModuleCVMD"
+Key = "Model"
+MatchString = "CVMD"

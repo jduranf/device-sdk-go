@@ -6,110 +6,138 @@ description: "Module digital inputs/outputs"
 labels: []
 deviceResources:
     -
-        name: Fact_Serial_Number
+        name: SerialNumber
         description: "Factory Device Serial Number"
         attributes:
             { PrimaryTable: "HoldingRegister", StartingAddress: "61440", ValueType: "STRING", Length: "7", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "String", readWrite: "RW" }
+                { type: "String", readWrite: "R" }
     -
-        name: Fact_Serial_ID
-        description: "Factory Device Serial ID"
+        name: FirmwareVersion
+        description: "Firmware Version"
         attributes:
-            { PrimaryTable: "HoldingRegister", StartingAddress: "61450", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "ARRAY", Length: "3", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
+                { type: "String", readWrite: "R" }
     -
-        name: Fact_Frame_Number
-        description: "Factory Device Frame Number"
+        name: StateDigitalOutput1
+        description: "State of Digital Ouput 1"
         attributes:
-            { PrimaryTable: "HoldingRegister", StartingAddress: "61504", ValueType: "UINT32", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "Coil", StartingAddress: "2000", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
+                { type: "Bool", readWrite: "RW" }
     -
-        name: Fact_Production_Status
-        description: "Factory Device Production Status"
+        name: StateDigitalOutput2
+        description: "State of Digital Ouput 2"
         attributes:
-            { PrimaryTable: "HoldingRegister", StartingAddress: "61536", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "Coil", StartingAddress: "2001", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
-
+                { type: "Bool", readWrite: "RW" }
     -
-        name: Firmware_Version_Major
-        description: "Firmware_Version_Major"
+        name: StateDigitalOutput3
+        description: "State of Digital Ouput 3"
         attributes:
-            { PrimaryTable: "InputRegister", StartingAddress: "49800", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "Coil", StartingAddress: "2002", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
+                { type: "Bool", readWrite: "RW" }
     -
-        name: Firmware_Version_Minor
-        description: "Firmware_Version_Minor"
+        name: StateDigitalOutput4
+        description: "State of Digital Ouput 4"
         attributes:
-            { PrimaryTable: "InputRegister", StartingAddress: "49801", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "Coil", StartingAddress: "2003", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
+                { type: "Bool", readWrite: "RW" }
     -
-        name: Firmware_Version_Revision
-        description: "Firmware_Version_Revision"
+        name: StateDigitalInput1
+        description: "State of Digital Input 1"
         attributes:
-            { PrimaryTable: "InputRegister", StartingAddress: "49802", ValueType: "UINT16", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "DiscreteInput", StartingAddress: "0", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "Float", readWrite: "RW", scale: "1" }
+                { type: "Bool", readWrite: "R" }
     -
-        name: Factory_Model
-        description: "Factory Model"
+        name: StateDigitalInput2
+        description: "State of Digital Input 2"
         attributes:
-            { PrimaryTable: "InputRegister", StartingAddress: "49804", ValueType: "STRING", Length: "2", IsByteSwap: "false" , IsWordSwap: "false" }
+            { PrimaryTable: "DiscreteInput", StartingAddress: "1", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
         properties:
             value:
-                { type: "String", readWrite: "RW" }
-
-
+                { type: "Bool", readWrite: "R" }
+    -
+        name: StateDigitalInput3
+        description: "State of Digital Input 3"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "2", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
+    -
+        name: StateDigitalInput4
+        description: "State of Digital Input 4"
+        attributes:
+            { PrimaryTable: "DiscreteInput", StartingAddress: "3", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
+        properties:
+            value:
+                { type: "Bool", readWrite: "R" }
 resources:
     -
-        name: Fact_Serial_Number
+        name: SerialNumber
         get:
-          - { object: "Fact_Serial_Number", parameter: "Fact_Serial_Number" }
+          - { object: "SerialNumber", parameter: "SerialNumber" }
+    -
+        name: FirmwareVersion
+        get:
+          - { object: "FirmwareVersion", parameter: "FirmwareVersion" }
+    -
+        name: StateDigitalOutput1
+        get:
+          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
         set:
-          - { object: "Fact_Serial_Number", parameter: "Fact_Serial_Number" }
+          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
     -
-        name: Fact_Serial_ID
+        name: StateDigitalOutput2
         get:
-          - { object: "Fact_Serial_ID", parameter: "Fact_Serial_ID" }
+          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
         set:
-          - { object: "Fact_Serial_ID", parameter: "Fact_Serial_ID" }
+          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
     -
-        name: Fact_Frame_Number
+        name: StateDigitalOutput3
         get:
-          - { object: "Fact_Frame_Number", parameter: "Fact_Frame_Number" }
+          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
         set:
-          - { object: "Fact_Frame_Number", parameter: "Fact_Frame_Number" }
+          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
     -
-        name: Fact_Production_Status
+        name: StateDigitalOutput4
         get:
-          - { object: "Fact_Production_Status", parameter: "Fact_Production_Status" }
+          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
         set:
-          - { object: "Fact_Production_Status", parameter: "Fact_Production_Status" }
+          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
     -
-        name: Firmware_Version_Major
+        name: StateDigitalInput1
         get:
-          - { object: "Firmware_Version_Major", parameter: "Firmware_Version_Major" }
+          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
     -
-        name: Firmware_Version_Minor
+        name: StateDigitalInput2
         get:
-          - { object: "Firmware_Version_Minor", parameter: "Firmware_Version_Minor" }
+          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
     -
-        name: Firmware_Version_Revision
+        name: StateDigitalInput3
         get:
-          - { object: "Firmware_Version_Revision", parameter: "Firmware_Version_Revision" }
+          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
     -
-        name: Factory_Model
+        name: StateDigitalInput4
         get:
-          - { object: "Factory_Model", parameter: "Factory_Model" }
+          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }
+    -
+        name: StateDigitalInputs
+        get:
+          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
+          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
+          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
+          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }

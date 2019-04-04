@@ -37,6 +37,7 @@ const (
 	modbusHoldingRegister = "HoldingRegister"
 	modbusInputRegister   = "InputRegister"
 	modbusCoil            = "Coil"
+	modbusDiscreteInput   = "DiscreteInput"
 )
 
 const (
@@ -47,6 +48,8 @@ const addIrFactModel = 49804
 const addHrFactSerialNumber = 61440
 const lenIrFactModel = 2
 const lenHrFactSerialNumber = 7
+
+const maxPrecision = 6
 
 type ModbusDevice struct {
 	tcpHandler *modbus.TCPClientHandler
@@ -72,6 +75,7 @@ type modbusReadConfig struct {
 	isByteSwap bool
 	isWordSwap bool
 	resultType string
+	precision  int
 }
 
 type discoverResult struct {
@@ -325,7 +329,7 @@ func getReadValues(dr *models.DeviceResource) (readConfig modbusReadConfig, err 
 		return
 	}
 	readConfig.function = dr.Attributes["PrimaryTable"].(string)
-	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" {
+	if readConfig.function != "HoldingRegister" && readConfig.function != "InputRegister" && readConfig.function != "Coil" && readConfig.function != "DiscreteInput" {
 		err = fmt.Errorf("Invalid attribute: %v", dr.Attributes)
 		return
 	}
@@ -390,6 +394,17 @@ func getReadValues(dr *models.DeviceResource) (readConfig modbusReadConfig, err 
 	if dr.Properties.Value.Type == "Bool" || dr.Properties.Value.Type == "String" || dr.Properties.Value.Type == "Integer" ||
 		dr.Properties.Value.Type == "Float" || dr.Properties.Value.Type == "Json" {
 		readConfig.resultType = dr.Properties.Value.Type
+
+		if dr.Properties.Value.Type == "Float" {
+			if dr.Properties.Value.Precision != "" {
+				readConfig.precision, err = strconv.Atoi(dr.Properties.Value.Precision)
+				if err != nil {
+					readConfig.precision = maxPrecision
+				}
+			} else {
+				readConfig.precision = maxPrecision
+			}
+		}
 	} else {
 		err = fmt.Errorf("Invalid resultType: %v", dr.Properties.Value.Type)
 		return
@@ -404,6 +419,8 @@ func readModbus(client modbus.Client, readConfig modbusReadConfig) ([]byte, erro
 		return client.ReadInputRegisters(readConfig.address, readConfig.size)
 	} else if readConfig.function == modbusCoil {
 		return client.ReadCoils(readConfig.address, readConfig.size)
+	} else if readConfig.function == modbusDiscreteInput {
+		return client.ReadDiscreteInputs(readConfig.address, readConfig.size)
 	}
 
 	err := fmt.Errorf("Invalid read function: %s", readConfig.function)
@@ -414,7 +431,13 @@ func writeModbus(client modbus.Client, readConfig modbusReadConfig, value []byte
 	if readConfig.function == modbusHoldingRegister || readConfig.function == modbusInputRegister {
 		return client.WriteMultipleRegisters(readConfig.address, readConfig.size, value)
 	} else if readConfig.function == modbusCoil {
-		return client.WriteSingleCoil(readConfig.address, binary.LittleEndian.Uint16(value))
+		var val uint16
+		if uint16(value[0]) != 0 {
+			val = 0xFF00
+		} else {
+			val = 0
+		}
+		return client.WriteSingleCoil(readConfig.address, val)
 	}
 
 	err := fmt.Errorf("Invalid write function: %s", readConfig.function)
@@ -500,6 +523,8 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 		}
 	} else if readConf.resultType == "Float" {
 		if difType == "Float" {
+			output := math.Pow(10, float64(readConf.precision))
+			valueFloat = float64(math.Round(valueFloat*output)) / output
 			result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
 		} else if difType == "Int" {
 			result, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
@@ -540,7 +565,7 @@ func setWriteValue(param ds_models.CommandValue, writeConf modbusReadConfig) []b
 			}
 		}
 	} else if writeConf.resultType == "Bool" {
-		data = swapBitDataBytes(param.NumericValue[6:], isByteSwap, isWordSwap)
+		data = param.NumericValue
 	} else if writeConf.resultType == "Json" {
 		//TODO:JSon case
 	} else if writeConf.resultType == "Integer" {
@@ -729,6 +754,7 @@ func discoverScan(address int) (discoverResult, error) {
 	var data []byte
 	data, err = readModbus(modbusDevice.client, readConf)
 	if err != nil {
+		releaseClient(modbusDevice)
 		return disc, err
 	}
 	dev["Model"] = string(data[:])
@@ -739,6 +765,7 @@ func discoverScan(address int) (discoverResult, error) {
 	readConf.size = lenHrFactSerialNumber
 	data, err = readModbus(modbusDevice.client, readConf)
 	if err != nil {
+		releaseClient(modbusDevice)
 		return disc, err
 	}
 	dev["SerialNum"] = string(data[:])
