@@ -193,6 +193,7 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 		}
 		ns := float32(s)
 		value = v * ns
+		value = (float32)(math.Round(value.(float64)*1000000) / 1000000) //max precision 6
 	case float64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -200,6 +201,7 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		value = v * s
+		value = math.Round(value.(float64)*1000000) / 1000000 //max precision 6
 	}
 
 	return value, nil

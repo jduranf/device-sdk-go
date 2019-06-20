@@ -52,7 +52,7 @@ func handleDevice(method string, id string) common.AppError {
 			err = cache.Profiles().Add(device.Profile)
 			if err == nil {
 				provision.CreateDescriptorsFromProfile(&device.Profile)
-				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Id))
+				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Name))
 			} else {
 				appErr := common.NewServerError(err.Error(), err)
 				common.LoggingClient.Error(fmt.Sprintf("Couldn't add device profile %s: %v", device.Profile.Name, err.Error()))
@@ -62,10 +62,10 @@ func handleDevice(method string, id string) common.AppError {
 
 		err = cache.Devices().Add(device)
 		if err == nil {
-			common.LoggingClient.Info(fmt.Sprintf("Added device %s", id))
+			common.LoggingClient.Info(fmt.Sprintf("Added device %s", device.Name))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Couldn't add device %s: %v", id, err.Error()))
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't add device %s: %v", device.Name, err.Error()))
 			return appErr
 		}
 	} else if method == http.MethodPut {
@@ -78,10 +78,10 @@ func handleDevice(method string, id string) common.AppError {
 
 		err = cache.Devices().Update(dev)
 		if err == nil {
-			common.LoggingClient.Info(fmt.Sprintf("Updated device %s", id))
+			common.LoggingClient.Info(fmt.Sprintf("Updated device %s", dev.Name))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device %s: %v", id, err.Error()))
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device %s: %v", dev.Name, err.Error()))
 			return appErr
 		}
 	} else if method == http.MethodDelete {
@@ -108,17 +108,17 @@ func handleProfile(method string, id string) common.AppError {
 		profile, err := common.DeviceProfileClient.DeviceProfile(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device profile %s from Core Metadata: %v", id, err))
+			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device profile %s from Core Metadata: %v", profile.Name, err))
 			return appErr
 		}
 
 		err = cache.Profiles().Update(profile)
 		if err == nil {
 			provision.CreateDescriptorsFromProfile(&profile)
-			common.LoggingClient.Info(fmt.Sprintf("Updated device profile %s", id))
+			common.LoggingClient.Info(fmt.Sprintf("Updated device profile %s", profile.Name))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device profile %s: %v", id, err.Error()))
+			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device profile %s: %v", profile.Name, err.Error()))
 			return appErr
 		}
 	} else {

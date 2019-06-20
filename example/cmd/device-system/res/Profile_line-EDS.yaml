@@ -1,8 +1,8 @@
 # Copyright 2018 Circutor. All rights reserved.
-name:         "system-profile"
+name:         "line-EDS-Cloud"
 manufacturer: "Circutor"
-model:        "EDS"
-description:  "System Profile"
+model:        "line-EDS-Cloud"
+description:  "line-EDS-Cloud System Profile"
 labels:
  - "EDS"
  - "system"

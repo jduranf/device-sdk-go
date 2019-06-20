@@ -51,6 +51,12 @@ func SendEvent(event *models.Event) {
 	_, err := EventClient.Add(event, ctx)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
+	} else {
+		var str string
+		for i := range event.Readings {
+			str += event.Readings[i].Name + " = " + event.Readings[i].Value + "; "
+		}
+		LoggingClient.Info(fmt.Sprintf("Push event for device %s: %s", event.Device, str))
 	}
 }
 

@@ -1,7 +1,7 @@
 # Copyright 2019 Circutor. All rights reserved.
-name: "ModuleMDIO"
+name: "line-M-4IO-D"
 manufacturer: "Circutor"
-model: "CVM-D-MDIO"
+model: "line-M-4IO-D"
 description: "Module digital inputs/outputs"
 labels: []
 deviceResources:
@@ -22,7 +22,7 @@ deviceResources:
             value:
                 { type: "String", readWrite: "R" }
     -
-        name: StateDigitalOutput1
+        name: Output1
         description: "State of Digital Ouput 1"
         attributes:
             { PrimaryTable: "Coil", StartingAddress: "2000", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -30,7 +30,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "RW" }
     -
-        name: StateDigitalOutput2
+        name: Output2
         description: "State of Digital Ouput 2"
         attributes:
             { PrimaryTable: "Coil", StartingAddress: "2001", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -38,7 +38,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "RW" }
     -
-        name: StateDigitalOutput3
+        name: Output3
         description: "State of Digital Ouput 3"
         attributes:
             { PrimaryTable: "Coil", StartingAddress: "2002", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -46,7 +46,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "RW" }
     -
-        name: StateDigitalOutput4
+        name: Output4
         description: "State of Digital Ouput 4"
         attributes:
             { PrimaryTable: "Coil", StartingAddress: "2003", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -54,7 +54,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "RW" }
     -
-        name: StateDigitalInput1
+        name: Input1
         description: "State of Digital Input 1"
         attributes:
             { PrimaryTable: "DiscreteInput", StartingAddress: "0", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -62,7 +62,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "R" }
     -
-        name: StateDigitalInput2
+        name: Input2
         description: "State of Digital Input 2"
         attributes:
             { PrimaryTable: "DiscreteInput", StartingAddress: "1", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -70,7 +70,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "R" }
     -
-        name: StateDigitalInput3
+        name: Input3
         description: "State of Digital Input 3"
         attributes:
             { PrimaryTable: "DiscreteInput", StartingAddress: "2", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -78,7 +78,7 @@ deviceResources:
             value:
                 { type: "Bool", readWrite: "R" }
     -
-        name: StateDigitalInput4
+        name: Input4
         description: "State of Digital Input 4"
         attributes:
             { PrimaryTable: "DiscreteInput", StartingAddress: "3", ValueType: "BOOL", IsByteSwap: "false" , IsWordSwap: "false" }
@@ -95,49 +95,49 @@ resources:
         get:
           - { object: "FirmwareVersion", parameter: "FirmwareVersion" }
     -
-        name: StateDigitalOutput1
+        name: Output1
         get:
-          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
+          - { object: "Output1", parameter: "Output1" }
         set:
-          - { object: "StateDigitalOutput1", parameter: "StateDigitalOutput1" }
+          - { object: "Output1", parameter: "Output1" }
     -
-        name: StateDigitalOutput2
+        name: Output2
         get:
-          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
+          - { object: "Output2", parameter: "Output2" }
         set:
-          - { object: "StateDigitalOutput2", parameter: "StateDigitalOutput2" }
+          - { object: "Output2", parameter: "Output2" }
     -
-        name: StateDigitalOutput3
+        name: Output3
         get:
-          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
+          - { object: "Output3", parameter: "Output3" }
         set:
-          - { object: "StateDigitalOutput3", parameter: "StateDigitalOutput3" }
+          - { object: "Output3", parameter: "Output3" }
     -
-        name: StateDigitalOutput4
+        name: Output4
         get:
-          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
+          - { object: "Output4", parameter: "Output4" }
         set:
-          - { object: "StateDigitalOutput4", parameter: "StateDigitalOutput4" }
+          - { object: "Output4", parameter: "Output4" }
     -
-        name: StateDigitalInput1
+        name: Input1
         get:
-          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
+          - { object: "Input1", parameter: "Input1" }
     -
-        name: StateDigitalInput2
+        name: Input2
         get:
-          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
+          - { object: "Input2", parameter: "Input2" }
     -
-        name: StateDigitalInput3
+        name: Input3
         get:
-          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
+          - { object: "Input3", parameter: "Input3" }
     -
-        name: StateDigitalInput4
+        name: Input4
         get:
-          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }
+          - { object: "Input4", parameter: "Input4" }
     -
-        name: StateDigitalInputs
+        name: Inputs
         get:
-          - { object: "StateDigitalInput1", parameter: "StateDigitalInput1" }
-          - { object: "StateDigitalInput2", parameter: "StateDigitalInput2" }
-          - { object: "StateDigitalInput3", parameter: "StateDigitalInput3" }
-          - { object: "StateDigitalInput4", parameter: "StateDigitalInput4" }
+          - { object: "Input1", parameter: "Input1" }
+          - { object: "Input2", parameter: "Input2" }
+          - { object: "Input3", parameter: "Input3" }
+          - { object: "Input4", parameter: "Input4" }
