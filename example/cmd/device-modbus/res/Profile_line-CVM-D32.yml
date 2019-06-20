@@ -1,8 +1,8 @@
 # Copyright 2019 Circutor. All rights reserved.
-name: "ModuleCVMD"
+name: "line-CVM-D32"
 manufacturer: "Circutor"
-model: "CVM-D"
-description: "CVM-D like Module CVM-D"
+model: "line-CVM-D32"
+description: "AC ThreePhasic Analyzer"
 labels: []
 deviceResources:
     -

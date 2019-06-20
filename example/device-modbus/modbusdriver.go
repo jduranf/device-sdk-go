@@ -65,8 +65,14 @@ func (m *ModbusDriver) HandleReadCommands(deviceName string, protocols map[strin
 		}
 
 		var data []byte
-		data, err = readModbus(modbusDevice.client, readConfig)
-
+		numRetries := comRetries
+		for {
+			data, err = readModbus(modbusDevice.client, readConfig)
+			numRetries--
+			if (err == nil) || (numRetries == 0) {
+				break
+			}
+		}
 		updateOperatingState(m, err, deviceName)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error reading Modbus data: %v", err))
@@ -113,7 +119,14 @@ func (m *ModbusDriver) HandleWriteCommands(deviceName string, protocols map[stri
 		}
 		var value []byte
 		value = setWriteValue(*params[i], readConfig)
-		_, err = writeModbus(modbusDevice.client, readConfig, value)
+		numRetries := comRetries
+		for {
+			_, err = writeModbus(modbusDevice.client, readConfig, value)
+			numRetries--
+			if (err == nil) || (numRetries == 0) {
+				break
+			}
+		}
 		updateOperatingState(m, err, deviceName)
 		if err != nil {
 			m.lc.Warn(fmt.Sprintf("Error writing Modbus data: %v", err))

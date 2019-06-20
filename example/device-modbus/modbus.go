@@ -41,7 +41,8 @@ const (
 )
 
 const (
-	comTimeout = 2000
+	comTimeout = 500
+	comRetries = 3
 )
 
 const addIrFactModel = 49804
@@ -463,13 +464,19 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
 		difType = "Int"
 	case "INT16":
-		valueInt = int64(binary.BigEndian.Uint16(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		var val int16
+		binary.Read(bytes.NewReader(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)), binary.BigEndian, &val)
+		valueInt = int64(val)
 		difType = "Int"
 	case "INT32":
-		valueInt = int64(binary.BigEndian.Uint32(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		var val int32
+		binary.Read(bytes.NewReader(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)), binary.BigEndian, &val)
+		valueInt = int64(val)
 		difType = "Int"
 	case "INT64":
-		valueInt = int64(binary.BigEndian.Uint64(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)))
+		var val int64
+		binary.Read(bytes.NewReader(swapBitDataBytes(dat, readConf.isByteSwap, readConf.isWordSwap)), binary.BigEndian, &val)
+		valueInt = int64(val)
 		difType = "Int"
 	case "FLOAT32":
 		valueFloat = float64(math.Float32frombits(binary.BigEndian.Uint32(dat)))
@@ -522,15 +529,13 @@ func setResult(readConf modbusReadConfig, dat []byte, creq ds_models.CommandRequ
 			result, err = ds_models.NewInt64Value(&creq.RO, now, valueInt)
 		}
 	} else if readConf.resultType == "Float" {
-		if difType == "Float" {
-			output := math.Pow(10, float64(readConf.precision))
-			valueFloat = float64(math.Round(valueFloat*output)) / output
-			result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
-		} else if difType == "Int" {
-			result, err = ds_models.NewFloat64Value(&creq.RO, now, float64(valueInt))
+		output := math.Pow(10, float64(readConf.precision))
+		if difType == "Int" {
+			valueFloat = float64(valueInt)
 		}
+		valueFloat = float64(math.Round(valueFloat*output)) / output
+		result, err = ds_models.NewFloat64Value(&creq.RO, now, valueFloat)
 	}
-
 	return *result, err
 }
 
@@ -752,7 +757,14 @@ func discoverScan(address int) (discoverResult, error) {
 	readConf.address = addIrFactModel
 	readConf.size = lenIrFactModel
 	var data []byte
-	data, err = readModbus(modbusDevice.client, readConf)
+	numRetries := comRetries
+	for {
+		data, err = readModbus(modbusDevice.client, readConf)
+		numRetries--
+		if (err == nil) || (numRetries == 0) {
+			break
+		}
+	}
 	if err != nil {
 		releaseClient(modbusDevice)
 		return disc, err
@@ -763,7 +775,14 @@ func discoverScan(address int) (discoverResult, error) {
 	readConf.function = modbusHoldingRegister
 	readConf.address = addHrFactSerialNumber
 	readConf.size = lenHrFactSerialNumber
-	data, err = readModbus(modbusDevice.client, readConf)
+	numRetries = comRetries
+	for {
+		data, err = readModbus(modbusDevice.client, readConf)
+		numRetries--
+		if (err == nil) || (numRetries == 0) {
+			break
+		}
+	}
 	if err != nil {
 		releaseClient(modbusDevice)
 		return disc, err
@@ -778,8 +797,28 @@ func discoverScan(address int) (discoverResult, error) {
 }
 
 func discoverAssign(disc discoverResult) error {
+	var nameDevice string
+
 	// Check if device already exist
-	nameDevice := disc.identifiers["Model"] + "_SN:" + disc.identifiers["SerialNum"]
+	strSN := string(disc.identifiers["SerialNum"][len(disc.identifiers["SerialNum"])-3:])
+
+	switch disc.identifiers["Model"] {
+	case "CVMD":
+		nameDevice = "line-CVM-D32 : " + strSN
+		break
+	case "CAIO":
+		nameDevice = "line-M-4IO-A : " + strSN
+		break
+	case "TDIO":
+		nameDevice = "line-M-4IO-T : " + strSN
+		break
+	case "RDIO":
+		nameDevice = "line-M-4IO-R : " + strSN
+		break
+	case "VDIO":
+		nameDevice = "line-M-4IO-RV : " + strSN
+		break
+	}
 	_, ok := cache.Devices().ForName(nameDevice)
 	if ok {
 		return nil

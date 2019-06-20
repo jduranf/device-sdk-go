@@ -55,30 +55,30 @@ Level = "INFO"
 # Pre-define ProvisionWatchers
 [[Watchers]]
 Name = "CAIO"
-Profile = "ModuleMAIO"
+Profile = "line-M-4IO-A"
 Key = "Model"
 MatchString = "CAIO"
 
 [[Watchers]]
 Name = "TDIO"
-Profile = "ModuleMDIO"
+Profile = "line-M-4IO-D"
 Key = "Model"
 MatchString = "TDIO"
 
 [[Watchers]]
 Name = "RDIO"
-Profile = "ModuleMDIO"
+Profile = "line-M-4IO-D"
 Key = "Model"
 MatchString = "RDIO"
 
 [[Watchers]]
 Name = "VDIO"
-Profile = "ModuleMDIO"
+Profile = "line-M-4IO-D"
 Key = "Model"
 MatchString = "VDIO"
 
 [[Watchers]]
 Name = "CVMD"
-Profile = "ModuleCVMD"
+Profile = "line-CVM-D32"
 Key = "Model"
 MatchString = "CVMD"

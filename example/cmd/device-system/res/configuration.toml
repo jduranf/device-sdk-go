@@ -54,9 +54,9 @@ Level = "INFO"
 
 # Pre-define Devices
 [[DeviceList]]
-  Name = "device-system"
-  Profile = "system-profile"
-  Description = "EDS sytem device"
+  Name = "line-EDS"
+  Profile = "line-EDS-Cloud"
+  Description = "line-EDS-Cloud device"
   Labels = [ "EDS", "system" ]
   [DeviceList.Protocols]
     [DeviceList.Protocols.other]
