@@ -1,6 +1,6 @@
-.PHONY: build test clean
+.PHONY: build arm test clean
 
-GO=CGO_ENABLED=0 go
+GO=go
 
 MICROSERVICES=example/cmd/device-simple/device-simple example/cmd/device-modbus/device-modbus example/cmd/device-system/device-system
 .PHONY: $(MICROSERVICES)
@@ -12,16 +12,19 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go.Version=$(VERSION)"
 GIT_SHA=$(shell git rev-parse HEAD)
 
 build: $(MICROSERVICES)
-	$(GO) build ./...
 
 example/cmd/device-simple/device-simple:
 	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
 
 example/cmd/device-modbus/device-modbus:
-	$(GO) build -o $@ ./example/cmd/device-modbus
+	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-modbus
 
 example/cmd/device-system/device-system:
-	$(GO) build -o $@ ./example/cmd/device-system
+	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-system
+
+arm:
+	GOOS=linux GOARCH=arm $(GO) build $(GOFLAGS) -o example/cmd/device-modbus/device-modbus ./example/cmd/device-modbus
+	GOOS=linux GOARCH=arm $(GO) build $(GOFLAGS) -o example/cmd/device-system/device-system ./example/cmd/device-system
 
 test:
 	$(GO) test ./... -cover
