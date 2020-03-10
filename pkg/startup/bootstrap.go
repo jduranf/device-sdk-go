@@ -21,14 +21,11 @@ import (
 var (
 	confProfile string
 	confDir     string
-	useRegistry bool
 )
 
 // Bootstrap the Device Service in a default way
 func Bootstrap(serviceName string, serviceVersion string, driver ds_models.ProtocolDriver) {
 	//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // clean up existing flag defined by other code
-	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
-	flag.BoolVar(&useRegistry, "r", false, "Indicates the service should use registry.")
 	flag.StringVar(&confProfile, "profile", "", "Specify a profile other than default.")
 	flag.StringVar(&confProfile, "p", "", "Specify a profile other than default.")
 	flag.StringVar(&confDir, "confdir", "", "Specify an alternate configuration directory.")
@@ -42,7 +39,7 @@ func Bootstrap(serviceName string, serviceVersion string, driver ds_models.Proto
 }
 
 func startService(serviceName string, serviceVersion string, driver ds_models.ProtocolDriver) error {
-	s, err := device.NewService(serviceName, serviceVersion, confProfile, confDir, useRegistry, driver)
+	s, err := device.NewService(serviceName, serviceVersion, confProfile, confDir, driver)
 	if err != nil {
 		return err
 	}

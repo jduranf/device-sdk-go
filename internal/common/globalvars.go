@@ -19,7 +19,6 @@ var (
 	ServiceVersion         string
 	CurrentConfig          *Config
 	CurrentDeviceService   models.DeviceService
-	UseRegistry            bool
 	ServiceLocked          bool
 	Driver                 ds_models.ProtocolDriver
 	EventClient            coredata.EventClient

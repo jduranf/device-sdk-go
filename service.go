@@ -70,12 +70,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return err
 	}
 
-	// If useRegistry selected then configLoader.RegistryClient will not be nil
-	if configLoader.RegistryClient != nil {
-		// Logging has now been initialized so can start listening for configuration changes.
-		go configLoader.ListenForConfigChanges()
-	}
-
 	err = selfRegister()
 	if err != nil {
 		return fmt.Errorf("Couldn't register to metadata service")
@@ -241,7 +235,7 @@ func (s *Service) Stop(force bool) error {
 // version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will always return an error.
-func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto ds_models.ProtocolDriver) (*Service, error) {
+func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, proto ds_models.ProtocolDriver) (*Service, error) {
 	startTime := time.Now()
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
@@ -254,7 +248,7 @@ func NewService(serviceName string, serviceVersion string, confProfile string, c
 	}
 	common.ServiceName = serviceName
 
-	config, err := configLoader.LoadConfig(useRegistry, confProfile, confDir)
+	config, err := configLoader.LoadConfig(confProfile, confDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		os.Exit(1)

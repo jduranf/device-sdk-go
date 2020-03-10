@@ -2,7 +2,6 @@ module github.com/edgexfoundry/device-sdk-go
 
 require (
 	github.com/edgexfoundry/go-mod-core-contracts v0.0.0-20190326164454-587b69238c54
-	github.com/edgexfoundry/go-mod-registry v0.0.0-20190401195203-552208258719
 	github.com/globalsign/mgo v0.0.0-20180615134936-113d3961e731 // indirect
 	github.com/goburrow/modbus v0.1.0
 	github.com/goburrow/serial v0.1.0 // indirect

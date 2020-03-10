@@ -9,14 +9,11 @@ package clients
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -115,14 +112,8 @@ func checkDependencyServices() error {
 
 func checkServiceAvailable(serviceId string) error {
 	for i := 0; i < common.CurrentConfig.Service.ConnectRetries; i++ {
-		if common.UseRegistry {
-			if checkServiceAvailableViaRegistry(common.CurrentConfig.Clients[serviceId].Name) == true {
-				return nil
-			}
-		} else {
-			if checkServiceAvailableByPing(serviceId) == nil {
-				return nil
-			}
+		if checkServiceAvailableByPing(serviceId) == nil {
+			return nil
 		}
 		time.Sleep(time.Duration(common.CurrentConfig.Service.Timeout) * time.Millisecond)
 		common.LoggingClient.Debug(fmt.Sprintf("Checked %d times for %s availibility", i+1, serviceId))
@@ -150,48 +141,15 @@ func checkServiceAvailableByPing(serviceId string) error {
 	return err
 }
 
-func checkServiceAvailableViaRegistry(serviceId string) bool {
-	common.LoggingClient.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
-
-	if !config.RegistryClient.IsAlive() {
-		common.LoggingClient.Error("unable to check status of %s service: Registry not running")
-
-		return false
-	}
-
-	err := config.RegistryClient.IsServiceAvailable(serviceId)
-	if err != nil {
-		common.LoggingClient.Error(err.Error())
-		return false
-	}
-
-	return true
-}
-
-func checkConsulAvailable() bool {
-	addr := fmt.Sprintf("%v:%v", common.CurrentConfig.Registry.Host, common.CurrentConfig.Registry.Port)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Consul cannot be reached, address: %v and error is \"%v\" ", addr, err.Error()))
-		return false
-	}
-	conn.Close()
-	return true
-}
-
 func initializeClients() {
-	isRegistry := common.UseRegistry
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(clientCount)
-
-	endpoint := &endpoint.Endpoint{RegistryClient: config.RegistryClient, WG: &waitGroup}
 
 	metaAddr := common.CurrentConfig.Clients[common.ClientMetadata].Url()
 	dataAddr := common.CurrentConfig.Clients[common.ClientData].Url()
 
 	params := types.EndpointParams{
-		UseRegistry: isRegistry,
-		Interval:    15,
+		Interval: 15,
 	}
 
 	// initialize Core Metadata clients
@@ -199,37 +157,32 @@ func initializeClients() {
 
 	params.Path = clients.ApiAddressableRoute
 	params.Url = metaAddr + params.Path
-	common.AddressableClient = metadata.NewAddressableClient(params, endpoint)
+	common.AddressableClient = metadata.NewAddressableClient(params, nil)
 
 	params.Path = clients.ApiDeviceRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceClient = metadata.NewDeviceClient(params, endpoint)
+	common.DeviceClient = metadata.NewDeviceClient(params, nil)
 
 	params.Path = clients.ApiDeviceServiceRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, endpoint)
+	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, nil)
 
 	params.Path = clients.ApiDeviceProfileRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
+	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, nil)
 
 	params.Path = clients.ApiProvisionWatcherRoute
 	params.Url = metaAddr + params.Path
-	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, endpoint)
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, nil)
 
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
 
 	params.Path = clients.ApiEventRoute
 	params.Url = dataAddr + params.Path
-	common.EventClient = coredata.NewEventClient(params, endpoint)
+	common.EventClient = coredata.NewEventClient(params, nil)
 
 	params.Path = common.APIValueDescriptorRoute
 	params.Url = dataAddr + params.Path
-	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, endpoint)
-
-	if isRegistry {
-		// wait for the first endpoint discovery to make sure all clients work
-		waitGroup.Wait()
-	}
+	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, nil)
 }
