@@ -9,7 +9,7 @@
 package common
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/Circutor/edgex/pkg/clients"
 )
 
 const (
@@ -22,15 +22,11 @@ const (
 	HttpScheme  = "http://"
 	HttpProto   = "HTTP"
 
-	ConfigDirectory    = "./res"
-	ConfigFileName     = "configuration.toml"
-	ConfigRegistryStem = "edgex/devices/1.0/"
-	WritableKey        = "/Writable"
+	ConfigDirectory = "./res"
+	ConfigFileName  = "configuration.toml"
 
-	APICallbackRoute        = APIv1Prefix + "/callback"
-	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
-	APIDiscoveryRoute       = APIv1Prefix + "/discovery"
-	APIPingRoute            = APIv1Prefix + "/ping"
+	APICallbackRoute = APIv1Prefix + "/callback"
+	APIPingRoute     = APIv1Prefix + "/ping"
 
 	NameVar      string = "name"
 	CommandVar   string = "command"

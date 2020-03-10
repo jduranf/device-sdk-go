@@ -27,8 +27,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/clients/types"
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/google/uuid"
 )
 

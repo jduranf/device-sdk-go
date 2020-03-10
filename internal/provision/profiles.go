@@ -14,9 +14,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
 )
@@ -90,7 +90,6 @@ func LoadProfiles(path string) error {
 
 			profile.Id = id
 			cache.Profiles().Add(profile)
-			CreateDescriptorsFromProfile(&profile)
 		}
 	}
 	return nil
@@ -102,68 +101,4 @@ func profileSliceToMap(profiles []models.DeviceProfile) map[string]models.Device
 		result[dp.Name] = dp
 	}
 	return result
-}
-
-func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
-	/*prs := profile.Resources
-	for _, pr := range prs {
-		for _, op := range pr.Get {
-			createDescriptorFromResourceOperation(profile.Name, op)
-		}
-		for _, op := range pr.Set {
-			createDescriptorFromResourceOperation(profile.Name, op)
-		}
-	}*/
-
-}
-
-func createDescriptorFromResourceOperation(profileName string, op models.ResourceOperation) {
-	if _, ok := cache.ValueDescriptors().ForName(op.Parameter); ok {
-		// Value Descriptor has been created
-		return
-	} else {
-		dr, ok := cache.Profiles().DeviceResource(profileName, op.Object)
-		if !ok {
-			common.LoggingClient.Error(fmt.Sprintf("can't find Device Object %s to match Resource Operation %v in Device Profile %s", op.Object, op, profileName))
-		}
-		desc, err := createDescriptor(op.Parameter, dr)
-		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
-		} else {
-			cache.ValueDescriptors().Add(*desc)
-		}
-	}
-}
-
-func createDescriptor(name string, dr models.DeviceResource) (*models.ValueDescriptor, error) {
-	value := dr.Properties.Value
-	units := dr.Properties.Units
-
-	common.LoggingClient.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
-
-	desc := &models.ValueDescriptor{
-		Name:         name,
-		Min:          value.Minimum,
-		Max:          value.Maximum,
-		Type:         value.Type,
-		UomLabel:     units.DefaultValue,
-		DefaultValue: value.DefaultValue,
-		Formatting:   "%s",
-		Description:  dr.Description,
-	}
-
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := common.ValueDescriptorClient.Add(desc, ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = common.VerifyIdFormat(id, "Value Descriptor"); err != nil {
-		return nil, err
-	}
-
-	desc.Id = id
-	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
-
-	return desc, nil
 }

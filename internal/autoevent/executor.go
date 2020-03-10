@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Executor interface {

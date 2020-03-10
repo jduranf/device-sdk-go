@@ -7,11 +7,11 @@
 package common
 
 import (
+	"github.com/Circutor/edgex/pkg/clients/coredata"
+	"github.com/Circutor/edgex/pkg/clients/logger"
+	"github.com/Circutor/edgex/pkg/clients/metadata"
+	"github.com/Circutor/edgex/pkg/models"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -27,6 +27,5 @@ var (
 	DeviceServiceClient    metadata.DeviceServiceClient
 	DeviceProfileClient    metadata.DeviceProfileClient
 	LoggingClient          logger.LoggingClient
-	ValueDescriptorClient  coredata.ValueDescriptorClient
 	ProvisionWatcherClient metadata.ProvisionWatcherClient
 )

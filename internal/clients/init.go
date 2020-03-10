@@ -13,12 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Circutor/edgex/pkg/clients"
+	"github.com/Circutor/edgex/pkg/clients/coredata"
+	"github.com/Circutor/edgex/pkg/clients/logger"
+	"github.com/Circutor/edgex/pkg/clients/metadata"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 )
 
 const clientCount int = 8
@@ -142,47 +141,27 @@ func checkServiceAvailableByPing(serviceId string) error {
 }
 
 func initializeClients() {
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(clientCount)
-
+	// Initialize Core Metadata clients
 	metaAddr := common.CurrentConfig.Clients[common.ClientMetadata].Url()
+
+	url := metaAddr + clients.ApiAddressableRoute
+	common.AddressableClient = metadata.NewAddressableClient(url)
+
+	url = metaAddr + clients.ApiDeviceRoute
+	common.DeviceClient = metadata.NewDeviceClient(url)
+
+	url = metaAddr + clients.ApiDeviceServiceRoute
+	common.DeviceServiceClient = metadata.NewDeviceServiceClient(url)
+
+	url = metaAddr + clients.ApiDeviceProfileRoute
+	common.DeviceProfileClient = metadata.NewDeviceProfileClient(url)
+
+	url = metaAddr + clients.ApiProvisionWatcherRoute
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(url)
+
+	// Initialize Core Data clients
 	dataAddr := common.CurrentConfig.Clients[common.ClientData].Url()
 
-	params := types.EndpointParams{
-		Interval: 15,
-	}
-
-	// initialize Core Metadata clients
-	params.ServiceKey = common.CurrentConfig.Clients[common.ClientMetadata].Name
-
-	params.Path = clients.ApiAddressableRoute
-	params.Url = metaAddr + params.Path
-	common.AddressableClient = metadata.NewAddressableClient(params, nil)
-
-	params.Path = clients.ApiDeviceRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceClient = metadata.NewDeviceClient(params, nil)
-
-	params.Path = clients.ApiDeviceServiceRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, nil)
-
-	params.Path = clients.ApiDeviceProfileRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, nil)
-
-	params.Path = clients.ApiProvisionWatcherRoute
-	params.Url = metaAddr + params.Path
-	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, nil)
-
-	// initialize Core Data clients
-	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
-
-	params.Path = clients.ApiEventRoute
-	params.Url = dataAddr + params.Path
-	common.EventClient = coredata.NewEventClient(params, nil)
-
-	params.Path = common.APIValueDescriptorRoute
-	params.Url = dataAddr + params.Path
-	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, nil)
+	url = dataAddr + clients.ApiEventRoute
+	common.EventClient = coredata.NewEventClient(url)
 }

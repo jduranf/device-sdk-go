@@ -15,9 +15,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Circutor/edgex/pkg/clients"
+	logger "github.com/Circutor/edgex/pkg/clients/logger"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
 )
 
@@ -96,7 +97,6 @@ func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log", "DEBUG")
 	common.LoggingClient = lc
 	common.ServiceLocked = false
-	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
 	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
 	r := InitRestRoutes()
 

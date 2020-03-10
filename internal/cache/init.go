@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -24,13 +24,6 @@ var (
 func InitCache() {
 	initOnce.Do(func() {
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-
-		vds, err := common.ValueDescriptorClient.ValueDescriptors(ctx)
-		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Value Descriptor cache initialization failed: %v", err))
-			vds = make([]models.ValueDescriptor, 0)
-		}
-		newValueDescriptorCache(vds)
 
 		ds, err := common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
 		if err != nil {

@@ -12,10 +12,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -42,8 +41,6 @@ func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err
 	}
 	profile.Id = id
 	cache.Profiles().Add(profile)
-
-	provision.CreateDescriptorsFromProfile(&profile)
 
 	return id, nil
 }
@@ -116,7 +113,6 @@ func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
 	}
 
 	err = cache.Profiles().Update(profile)
-	provision.CreateDescriptorsFromProfile(&profile)
 
 	return err
 }

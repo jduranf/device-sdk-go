@@ -12,11 +12,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -52,7 +51,6 @@ func handleDevice(method string, id string) common.AppError {
 		if exist == false {
 			err = cache.Profiles().Add(device.Profile)
 			if err == nil {
-				provision.CreateDescriptorsFromProfile(&device.Profile)
 				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Name))
 			} else {
 				appErr := common.NewServerError(err.Error(), err)
@@ -126,7 +124,6 @@ func handleProfile(method string, id string) common.AppError {
 
 		err = cache.Profiles().Update(profile)
 		if err == nil {
-			provision.CreateDescriptorsFromProfile(&profile)
 			common.LoggingClient.Info(fmt.Sprintf("Updated device profile %s", profile.Name))
 		} else {
 			appErr := common.NewServerError(err.Error(), err)

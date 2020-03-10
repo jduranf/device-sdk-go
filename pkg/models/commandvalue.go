@@ -14,7 +14,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 // ValueType indicates the type of value being passed back

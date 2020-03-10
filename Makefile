@@ -1,6 +1,6 @@
-.PHONY: build test clean docker
+.PHONY: build test clean
 
-GO=CGO_ENABLED=0 GO111MODULE=on go
+GO=CGO_ENABLED=0 go
 
 MICROSERVICES=example/cmd/device-simple/device-simple example/cmd/device-modbus/device-modbus example/cmd/device-system/device-system
 .PHONY: $(MICROSERVICES)
@@ -13,18 +13,9 @@ GIT_SHA=$(shell git rev-parse HEAD)
 
 build: $(MICROSERVICES)
 	$(GO) build ./...
-	$(GO) mod vendor
 
 example/cmd/device-simple/device-simple:
 	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
-
-docker:
-	docker build \
-		-f example/cmd/device-simple/Dockerfile \
-		--label "git_sha=$(GIT_SHA)" \
-		-t edgexfoundry/docker-device-sdk-simple:$(GIT_SHA) \
-		-t edgexfoundry/docker-device-sdk-simple:$(VERSION)-dev \
-		.
 
 example/cmd/device-modbus/device-modbus:
 	$(GO) build -o $@ ./example/cmd/device-modbus

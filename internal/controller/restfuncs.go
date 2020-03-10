@@ -18,8 +18,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/clients"
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/gorilla/mux"
 )
 

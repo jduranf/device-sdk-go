@@ -28,7 +28,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 	"github.com/goburrow/modbus"
 	"github.com/google/uuid"
 )

@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 type Manager interface {

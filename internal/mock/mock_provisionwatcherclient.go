@@ -9,7 +9,7 @@ package mock
 import (
 	"context"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 type ProvisionWatcherClientMock struct {

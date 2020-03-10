@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 func TestMain(m *testing.M) {

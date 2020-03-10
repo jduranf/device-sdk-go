@@ -6,7 +6,7 @@
 
 package models
 
-import "github.com/edgexfoundry/go-mod-core-contracts/models"
+import "github.com/Circutor/edgex/pkg/models"
 
 type CommandRequest struct {
 	// RO is a ResourceOperation

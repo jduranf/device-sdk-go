@@ -11,7 +11,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .

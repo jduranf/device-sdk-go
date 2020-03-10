@@ -9,7 +9,7 @@ package autoevent
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/Circutor/edgex/pkg/models"
 )
 
 func TestCompareReadings(t *testing.T) {
