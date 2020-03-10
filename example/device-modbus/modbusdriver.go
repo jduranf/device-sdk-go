@@ -13,7 +13,8 @@ import (
 	"fmt"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type ModbusDriver struct {
@@ -26,7 +27,7 @@ const numToDiscover = 7
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
-func (m *ModbusDriver) DisconnectDevice(deviceName string, protocols map[string]map[string]string) error {
+func (m *ModbusDriver) DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
 	return nil
 }
 
@@ -41,7 +42,7 @@ func (m *ModbusDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (m *ModbusDriver) HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (m *ModbusDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	var modbusDevice *ModbusDevice
 	modbusDevice, err = getClient(protocols)
@@ -95,7 +96,7 @@ func (m *ModbusDriver) HandleReadCommands(deviceName string, protocols map[strin
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (m *ModbusDriver) HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest,
+func (m *ModbusDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 	var err error
 	var modbusDevice *ModbusDevice

@@ -80,7 +80,7 @@ type modbusReadConfig struct {
 }
 
 type discoverResult struct {
-	protocols   map[string]map[string]string
+	protocols   map[string]models.ProtocolProperties
 	identifiers map[string]string
 }
 
@@ -96,7 +96,7 @@ func initModbusCache() {
 	})
 }
 
-func getClient(protocols map[string]map[string]string) (modbusDevice *ModbusDevice, err error) {
+func getClient(protocols map[string]models.ProtocolProperties) (modbusDevice *ModbusDevice, err error) {
 	modbusTCP, okTCP := protocols["ModbusTCP"]
 	modbusRTU, okRTU := protocols["ModbusRTU"]
 	if okTCP {
@@ -741,7 +741,7 @@ func discoverScan(address int) (discoverResult, error) {
 		"Parity":   "N",
 		"UnitID":   strconv.Itoa(address),
 	}
-	disc.protocols = map[string]map[string]string{
+	disc.protocols = map[string]models.ProtocolProperties{
 		"ModbusRTU": rtu,
 	}
 

@@ -17,7 +17,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/example/device-system/comp"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type SystemDriver struct {
@@ -45,7 +46,7 @@ var statsValues Stats
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
-func (sys *SystemDriver) DisconnectDevice(deviceName string, protocols map[string]map[string]string) error {
+func (sys *SystemDriver) DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
 	return nil
 }
 
@@ -59,7 +60,7 @@ func (sys *SystemDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (sys *SystemDriver) HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (sys *SystemDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	res = make([]*ds_models.CommandValue, len(reqs))
 	for i := range reqs {
@@ -107,7 +108,7 @@ func (sys *SystemDriver) HandleReadCommands(deviceName string, protocols map[str
 // a ResourceOperation for a specific device resource (aka DeviceObject).
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (sys *SystemDriver) HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest,
+func (sys *SystemDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 
 	if len(reqs) != 1 {

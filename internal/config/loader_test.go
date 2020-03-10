@@ -10,8 +10,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-registry"
-	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -20,6 +18,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 func TestCheckConsulUpReturnErrorOnTimeout(t *testing.T) {
@@ -42,13 +42,13 @@ func TestCheckConsulUpReturnErrorOnTimeout(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	registryConfig := registry.Config{
+	registryConfig := types.Config{
 		Host: host,
 		Port: port,
 		Type: "consul",
 	}
 
-	RegistryClient, err = factory.NewRegistryClient(registryConfig)
+	RegistryClient, err = registry.NewRegistryClient(registryConfig)
 	if err != nil {
 		t.Error("failed to create new registry client")
 	}
@@ -83,13 +83,13 @@ func TestCheckConsulUpReturnErrorOnBadResponse(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	registryConfig := registry.Config{
+	registryConfig := types.Config{
 		Host: host,
 		Port: port,
 		Type: "consul",
 	}
 
-	RegistryClient, err = factory.NewRegistryClient(registryConfig)
+	RegistryClient, err = registry.NewRegistryClient(registryConfig)
 	if err != nil {
 		t.Error("failed to create new registry client")
 	}
@@ -101,5 +101,22 @@ func TestCheckConsulUpReturnErrorOnBadResponse(t *testing.T) {
 
 	if err.Error() != "can't get connection to Registry" {
 		t.Error("Wrong error message ", err.Error())
+	}
+}
+
+func TestLoadDriverConfigFromFile(t *testing.T) {
+	expectedProperty1 := "Protocol"
+	expectedValue1 := "tcp"
+	expectedProperty2 := "Port"
+	expectedValue2 := "1883"
+
+	config, err := loadConfigFromFile("", "./test")
+
+	if err != nil {
+		t.Errorf("Fail to load config from file, %v", err)
+	} else if val, ok := config.Driver[expectedProperty1]; ok != true || val != expectedValue1 {
+		t.Errorf("Unexpected test result, '%s' should be exist and value shoud be '%s'", expectedProperty1, expectedValue1)
+	} else if val, ok := config.Driver[expectedProperty2]; ok != true || val != expectedValue2 {
+		t.Errorf("Unexpected test result, '%s' should be exist and value shoud be '%s'", expectedProperty2, expectedValue2)
 	}
 }
